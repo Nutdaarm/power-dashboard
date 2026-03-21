@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แผนที่โรงไฟฟ้า — กำลังผลิตตามสัญญา</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── THEMES ── */
+[data-theme="dark"]{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2330;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.18);
+  --text:#e6edf3;--muted:#7d8590;--shadow:rgba(0,0,0,0.6);
+  --tile-opacity:0.45;--overlay-bg:rgba(22,27,34,0.93);
+}
+[data-theme="light"]{
+  --bg:#f5f7fa;--surface:#ffffff;--surface2:#f0f2f5;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.16);
+  --text:#1a1f2e;--muted:#6b7280;--shadow:rgba(0,0,0,0.12);
+  --tile-opacity:1;--overlay-bg:rgba(255,255,255,0.95);
+}
+[data-theme="dark"] .blue{color:#58a6ff}
+[data-theme="light"] .blue{color:#1a6fc4}
+[data-theme="dark"] .green{color:#3fb950}
+[data-theme="light"] .green{color:#1a7a36}
+[data-theme="dark"] .amber{color:#d29922}
+[data-theme="light"] .amber{color:#a67c00}
+[data-theme="dark"] .purple{color:#bc8cff}
+[data-theme="light"] .purple{color:#7c3aed}
+
+:root{
+  --blue-val:#58a6ff;--green-val:#3fb950;--amber-val:#d29922;--purple-val:#bc8cff;
+}
+[data-theme="light"]{--blue-val:#1a6fc4;--green-val:#1a7a36;--amber-val:#a67c00;--purple-val:#7c3aed;}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Thai',sans-serif;overflow:hidden;transition:background .2s,color .2s}
+
+/* ── NAV ── */
+.nav{
+  height:52px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;z-index:1000;position:relative;
+  transition:background .2s,border-color .2s;
+}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#1d6fa4,#0f4a7a);display:flex;align-items:center;justify-content:center}
+.nav-logo svg{width:15px;height:15px}
+.nav-title{font-size:14px;font-weight:600;color:var(--text)}
+.nav-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.badge{padding:2px 8px;border-radius:20px;background:rgba(88,166,255,0.12);color:var(--blue-val);font-size:11px;border:1px solid rgba(88,166,255,0.25)}
+.nav-right{display:flex;gap:6px;align-items:center}
+.btn{
+  padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--muted);
+  font-family:'IBM Plex Sans Thai',sans-serif;transition:all .12s;
+}
+.btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.btn.active{background:var(--blue-val);color:#fff;border-color:var(--blue-val);font-weight:600}
+[data-theme="light"] .btn.active{color:#fff}
+
+/* theme toggle button */
+.theme-btn{
+  width:32px;height:32px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border2);background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all .12s;color:var(--text);
+}
+.theme-btn:hover{border-color:var(--blue-val);background:var(--surface)}
+
+/* nav separator */
+.nav-sep{width:1px;height:20px;background:var(--border2);margin:0 2px}
+
+/* dashboard link btn */
+.dash-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+  font-family:'IBM Plex Sans Thai',sans-serif;transition:all .12s;text-decoration:none;
+  font-weight:500;
+}
+.dash-btn:hover{border-color:var(--blue-val);color:var(--blue-val)}
+.dash-btn svg{width:13px;height:13px;flex-shrink:0}
+
+/* ── LAYOUT ── */
+.wrap{display:flex;height:calc(100vh - 52px)}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:264px;flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:background .2s,border-color .2s;
+}
+.sb-scroll{flex:1;overflow-y:auto;padding:14px 12px}
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.sh{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;padding:0 4px}
+.toggle-all{font-size:11px;color:var(--blue-val);cursor:pointer;padding:2px 4px;margin-bottom:4px}
+.toggle-all:hover{text-decoration:underline}
+.divider{height:1px;background:var(--border);margin:12px 0}
+
+/* stat cards */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.stat{background:var(--surface2);border-radius:8px;padding:9px 10px;transition:background .2s}
+.stat-label{font-size:10px;color:var(--muted);margin-bottom:3px}
+.stat-val{font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1}
+.stat-unit{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* filter items */
+.fg{display:flex;flex-direction:column;gap:2px;margin-bottom:2px}
+.fi{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .1s;user-select:none}
+.fi:hover{background:var(--surface2);color:var(--text)}
+.fi.on{color:var(--text)}
+.fi-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;opacity:.3;transition:opacity .1s}
+.fi.on .fi-dot{opacity:1}
+.fi-name{flex:1}
+.fi-cnt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
+
+/* slider */
+.slider-row{display:flex;align-items:center;gap:8px;padding:0 4px}
+.slider-label{font-size:11px;color:var(--muted);white-space:nowrap}
+input[type=range]{flex:1;accent-color:var(--blue-val)}
+.slider-val{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--blue-val);min-width:30px;text-align:right}
+
+/* ── DETAIL PANEL ── */
+.detail{
+  border-top:1px solid var(--border);background:var(--surface);
+  padding:0;flex-shrink:0;
+  max-height:320px;overflow-y:auto;
+  transition:background .2s,border-color .2s;
+}
+.detail::-webkit-scrollbar{width:3px}
+.detail::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.detail-empty-state{
+  padding:14px 12px;font-size:12px;color:var(--muted);
+  display:flex;align-items:center;gap:8px;font-style:italic;
+}
+.detail-empty-state svg{width:16px;height:16px;flex-shrink:0;opacity:.5}
+
+/* detail card */
+.detail-card{display:none;padding:0}
+.detail-img-wrap{
+  position:relative;height:110px;overflow:hidden;
+  background:var(--surface2);
+}
+.detail-img-wrap img{
+  width:100%;height:100%;object-fit:cover;
+  filter:brightness(0.85);transition:transform .3s;
+}
+.detail-img-wrap:hover img{transform:scale(1.04)}
+.detail-img-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%);
+}
+.detail-img-badge{
+  position:absolute;top:8px;right:8px;
+  padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;
+  backdrop-filter:blur(4px);
+}
+.detail-img-mw{
+  position:absolute;bottom:8px;left:10px;
+  font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#fff;
+  text-shadow:0 1px 4px rgba(0,0,0,0.8);
+}
+.detail-body{padding:10px 12px}
+.detail-name{font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.3}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.detail-row{font-size:11px;display:flex;gap:4px;align-items:baseline}
+.dk{color:var(--muted);min-width:56px;flex-shrink:0}
+.dv{color:var(--text)}
+
+/* donut */
+.donut-wrap{position:relative;height:130px;margin-bottom:4px}
+
+/* ── MAP ── */
+.map-wrap{position:relative;flex:1;overflow:hidden}
+#map{width:100%;height:100%}
+
+/* overlays */
+.map-search{position:absolute;top:14px;left:14px;z-index:500;display:flex;gap:6px}
+.map-search input{
+  width:230px;padding:7px 12px;
+  background:var(--overlay-bg);border:1px solid var(--border2);
+  border-radius:8px;color:var(--text);font-size:12px;
+  font-family:'IBM Plex Sans Thai',sans-serif;outline:none;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.map-search input:focus{border-color:var(--blue-val)}
+.map-search input::placeholder{color:var(--muted)}
+.map-cnt{
+  padding:6px 10px;background:var(--overlay-bg);
+  border:1px solid var(--border2);border-radius:8px;
+  font-size:11px;color:var(--muted);white-space:nowrap;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.map-legend{
+  position:absolute;bottom:20px;right:14px;z-index:500;
+  background:var(--overlay-bg);border:1px solid var(--border2);
+  border-radius:10px;padding:12px 14px;min-width:155px;
+  box-shadow:0 4px 16px var(--shadow);
+}
+.lg-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+.lg-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:5px}
+.lg-c{border-radius:50%;flex-shrink:0}
+.lg-sep{height:1px;background:var(--border);margin:8px 0}
+.lg-sz{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);margin-bottom:4px}
+
+/* leaflet tooltip */
+.leaflet-tooltip{
+  background:var(--overlay-bg) !important;
+  border:1px solid var(--border2) !important;
+  color:var(--text) !important;
+  font-family:'IBM Plex Sans Thai',sans-serif !important;
+  font-size:12px !important;border-radius:8px !important;
+  padding:7px 11px !important;
+  box-shadow:0 4px 16px var(--shadow) !important;
+}
+.leaflet-tooltip::before{display:none !important}
+.tt-name{font-weight:600;font-size:13px;margin-bottom:3px;color:var(--text)}
+.tt-row{display:flex;gap:6px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.tt-mw{font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:500}
+
+/* light mode leaflet tiles tweak */
+[data-theme="light"] .leaflet-tile-pane{filter:saturate(0.7) brightness(1.05)}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.detail-card.show{display:block;animation:slideUp .2s ease}
+</style>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#161b22" id="themeColorMeta">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Power Dash">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="72x72"  href="icons/icon-72.png">
+  <link rel="apple-touch-icon" sizes="96x96"  href="icons/icon-96.png">
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-left">
+    <div class="nav-logo">
+      <svg viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="1" width="6" height="6" rx="1.5" fill="#58a6ff"/>
+        <rect x="9" y="1" width="6" height="6" rx="1.5" fill="#3fb950"/>
+        <rect x="1" y="9" width="6" height="6" rx="1.5" fill="#d29922"/>
+        <rect x="9" y="9" width="6" height="6" rx="1.5" fill="#bc8cff"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-title">แผนที่โรงไฟฟ้า — กำลังผลิตตามสัญญา</div>
+      <div class="nav-sub">ณ 16 กุมภาพันธ์ 2569 · ระบบไฟฟ้าแห่งชาติ</div>
+    </div>
+    <span class="badge">49,410 MW</span>
+  </div>
+  <div class="nav-right">
+    <!-- Tile layer -->
+    <button class="btn active" id="btn-dark" onclick="setLayer('dark',this)">Dark</button>
+    <button class="btn" id="btn-topo" onclick="setLayer('topo',this)">Topo</button>
+    <button class="btn" id="btn-sat" onclick="setLayer('satellite',this)">Satellite</button>
+
+    <div class="nav-sep"></div>
+
+    <!-- Light/Dark mode toggle -->
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="เปลี่ยน Theme">🌙</button>
+
+    <div class="nav-sep"></div>
+
+    <!-- Dashboard link -->
+    <a href="index.html" class="dash-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="6" height="6" rx="1"/>
+        <rect x="9" y="1" width="6" height="6" rx="1"/>
+        <rect x="1" y="9" width="6" height="6" rx="1"/>
+        <rect x="9" y="9" width="6" height="6" rx="1"/>
+      </svg>
+      Dashboard
+    </a>
+
+    <div class="nav-sep"></div>
+
+    <!-- Logout -->
+    <button id="logoutBtn" onclick="logout()" class="btn" style="white-space:nowrap"></button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-scroll">
+      <div class="stats">
+        <div class="stat"><div class="stat-label">โรงที่แสดง</div><div class="stat-val blue" id="s-count">—</div><div class="stat-unit">โรงไฟฟ้า</div></div>
+        <div class="stat"><div class="stat-label">กำลังผลิตรวม</div><div class="stat-val green" id="s-mw">—</div><div class="stat-unit">เมกะวัตต์</div></div>
+        <div class="stat"><div class="stat-label">โรงใหญ่สุด</div><div class="stat-val amber" id="s-max">—</div><div class="stat-unit" id="s-max-n">MW</div></div>
+        <div class="stat"><div class="stat-label">เฉลี่ยต่อโรง</div><div class="stat-val purple" id="s-avg">—</div><div class="stat-unit">MW</div></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sh">ประเภทผู้ผลิต</div>
+      <div class="toggle-all" onclick="toggleAll('owner')">เลือก / ยกเลิกทั้งหมด</div>
+      <div class="fg" id="fg-owner"></div>
+
+      <div class="divider"></div>
+      <div class="sh">ประเภทโรงไฟฟ้า</div>
+      <div class="toggle-all" onclick="toggleAll('ptype')">เลือก / ยกเลิกทั้งหมด</div>
+      <div class="fg" id="fg-ptype"></div>
+
+      <div class="divider"></div>
+      <div class="sh">เชื้อเพลิง</div>
+      <div class="toggle-all" onclick="toggleAll('fuel')">เลือก / ยกเลิกทั้งหมด</div>
+      <div class="fg" id="fg-fuel"></div>
+
+      <div class="divider"></div>
+      <div class="sh">ขนาด Marker</div>
+      <div class="slider-row">
+        <span class="slider-label">ปรับขนาด</span>
+        <input type="range" min="0.5" max="3" step="0.1" value="1" id="szSlider" oninput="onSize(this.value)">
+        <span class="slider-val" id="szVal">1.0×</span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sh" style="margin-bottom:8px">สัดส่วนผู้ผลิต</div>
+      <div class="donut-wrap"><canvas id="miniDonut"></canvas></div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div class="detail">
+      <div class="detail-empty-state" id="d-empty">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="8" cy="8" r="6"/><line x1="8" y1="5" x2="8" y2="8"/><circle cx="8" cy="10.5" r=".5" fill="currentColor"/>
+        </svg>
+        คลิกที่จุดบนแผนที่เพื่อดูข้อมูล
+      </div>
+      <div class="detail-card" id="d-card"></div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-wrap">
+    <div class="map-search">
+      <input id="mapSearch" placeholder="ค้นหาโรงไฟฟ้า..." oninput="onSearch(this.value)">
+      <span class="map-cnt" id="map-cnt"></span>
+    </div>
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="lg-title">ประเภทผู้ผลิต</div>
+      <div id="legend-rows"></div>
+      <div class="lg-sep"></div>
+      <div class="lg-title">ขนาด = กำลังผลิต</div>
+      <div class="lg-sz"><div class="lg-c" style="width:6px;height:6px;background:#7d8590"></div>&lt; 100 MW</div>
+      <div class="lg-sz"><div class="lg-c" style="width:10px;height:10px;background:#7d8590"></div>100–500 MW</div>
+      <div class="lg-sz"><div class="lg-c" style="width:15px;height:15px;background:#7d8590"></div>500–1,500 MW</div>
+      <div class="lg-sz"><div class="lg-c" style="width:20px;height:20px;background:#7d8590"></div>&gt; 1,500 MW</div>
+      <div class="lg-sep"></div>
+      <div class="lg-title">รูปร่าง = ประเภทโรง</div>
+      <div class="lg-sz"><span style="font-size:14px">●</span> พลังงานหมุนเวียน</div>
+      <div class="lg-sz"><span style="font-size:14px">■</span> พลังความร้อน</div>
+      <div class="lg-sz"><span style="font-size:14px">◆</span> พลังความร้อนร่วม</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PLANT DATA ────────────────────────────────────────────────────────────────
+const PLANTS = [
+  {n:"เขื่อนภูมิพล",a:"BB",mw:779.2,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:17.2378,lng:98.9692},
+  {n:"เขื่อนสิริกิติ์",a:"SK",mw:500,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:18.1505,lng:100.7011},
+  {n:"เขื่อนอุบลรัตน์",a:"UR-H",mw:25.2,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:16.7667,lng:102.6333},
+  {n:"เขื่อนสิรินธร",a:"SRD-H",mw:36,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:15.3833,lng:105.35},
+  {n:"เขื่อนจุฬาภรณ์",a:"CLB",mw:40,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:16.1167,lng:101.55},
+  {n:"เขื่อนศรีนครินทร์",a:"SNR",mw:720,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:14.4928,lng:98.9406},
+  {n:"เขื่อนวชิราลงกรณ",a:"VRK",mw:300,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:14.6667,lng:98.8333},
+  {n:"เขื่อนท่าทุ่งนา",a:"TN",mw:39,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:14.1333,lng:99.55},
+  {n:"เขื่อนแก่งกระจาน",a:"KKC",mw:19,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:12.9167,lng:99.65},
+  {n:"เขื่อนบางลาง",a:"BLG",mw:72,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:5.9167,lng:101.55},
+  {n:"เขื่อนรัชชประภา",a:"RPB",mw:240,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:9.0,lng:98.9167},
+  {n:"เขื่อนปากมูล",a:"PMN",mw:136,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:15.5333,lng:105.3167},
+  {n:"เขื่อนแควน้อยบำรุงแดน",a:"KNO",mw:30,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:16.65,lng:100.35},
+  {n:"เขื่อนผาจุก",a:"PCK-H",mw:14,f:"พลังน้ำ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:17.8,lng:100.2833},
+  {n:"ลำตะคองชลภาวัฒนา (สูบกลับ)",a:"LTK-H",mw:1000,f:"พลังน้ำสูบกลับ",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:14.8481,lng:101.7294},
+  {n:"เขื่อนสิรินธร Solar Hybrid",a:"SRD-PV",mw:46.26,f:"แสงอาทิตย์",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:15.37,lng:105.4},
+  {n:"ทุ่นลอยน้ำเขื่อนอุบลรัตน์",a:"UR-PV1",mw:24,f:"แสงอาทิตย์",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:16.79,lng:102.62},
+  {n:"ลำตะคอง Wind ระยะที่ 2",a:"LTK2-W",mw:24,f:"พลังลม",o:"กฟผ.",pt:"หมุนเวียน",cc:"",lat:14.83,lng:101.71},
+  {n:"บางปะกง เครื่อง 3",a:"BPK-T3",mw:576,f:"ก๊าซ/น้ำมันเตา",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:13.5167,lng:101.0833},
+  {n:"บางปะกง เครื่อง 4",a:"BPK-T4",mw:576,f:"ก๊าซ/น้ำมันเตา",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:13.519,lng:101.087},
+  {n:"แม่เมาะ เครื่อง 8",a:"MM-T8",mw:270,f:"ถ่านหินลิกไนต์",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:18.35,lng:99.7},
+  {n:"แม่เมาะ เครื่อง 11",a:"MM-T11",mw:270,f:"ถ่านหินลิกไนต์",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:18.353,lng:99.702},
+  {n:"แม่เมาะ เครื่อง 12",a:"MM-T12",mw:270,f:"ถ่านหินลิกไนต์",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:18.356,lng:99.704},
+  {n:"แม่เมาะ เครื่อง 13",a:"MM-T13",mw:270,f:"ถ่านหินลิกไนต์",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:18.359,lng:99.706},
+  {n:"แม่เมาะ เครื่อง 14",a:"MM-T14",mw:600,f:"ถ่านหินลิกไนต์",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:18.362,lng:99.708},
+  {n:"กระบี่",a:"KA-T1",mw:315,f:"น้ำมันเตา",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:8.0667,lng:98.9167},
+  {n:"แม่ฮ่องสอน",a:"MH-D",mw:4.4,f:"น้ำมันดีเซล",o:"กฟผ.",pt:"ความร้อน",cc:"",lat:19.3,lng:97.9667},
+  {n:"น้ำพอง ชุดที่ 1",a:"NPO-C1",mw:325,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"CC+Single",lat:16.7167,lng:102.88},
+  {n:"น้ำพอง ชุดที่ 2",a:"NPO-C2",mw:325,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"CC+Single",lat:16.719,lng:102.895},
+  {n:"บางปะกง ชุดที่ 5",a:"BPK-C5",mw:710,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:13.522,lng:101.091},
+  {n:"บางปะกง ชุดที่ 1",a:"BPK-C1",mw:1386,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.525,lng:101.094},
+  {n:"วังน้อย ชุดที่ 4",a:"WN-C4",mw:750,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:14.2333,lng:100.7667},
+  {n:"พระนครใต้ ชุดที่ 3",a:"SB-C3",mw:710,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:13.5722,lng:100.5167},
+  {n:"พระนครใต้ ชุดที่ 4",a:"SB-C4",mw:1220,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.575,lng:100.52},
+  {n:"พระนครเหนือ ชุดที่ 1",a:"NB-C1",mw:670,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:13.8667,lng:100.5},
+  {n:"พระนครเหนือ ชุดที่ 2",a:"NB-C2",mw:828,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.869,lng:100.503},
+  {n:"จะนะ ชุดที่ 1",a:"CHN-C1",mw:710,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:6.85,lng:100.7167},
+  {n:"จะนะ ชุดที่ 2",a:"CHN-C2",mw:766,f:"ก๊าซธรรมชาติ",o:"กฟผ.",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:6.853,lng:100.72},
+  {n:"บ.บีแอลซีพี เพาเวอร์",a:"BLCP",mw:1346.5,f:"ถ่านหินบีทูมินัส",o:"IPP",pt:"ความร้อน",cc:"",lat:13.09,lng:100.9},
+  {n:"บ.เก็คโค่-วัน",a:"GOC-T1",mw:660,f:"ถ่านหินบีทูมินัส",o:"IPP",pt:"ความร้อน",cc:"",lat:13.093,lng:100.903},
+  {n:"บ.แก่งคอย เพาเวอร์",a:"KPG-C",mw:1468,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:14.5833,lng:101.0167},
+  {n:"บ.กัลฟ์ เจพี เอ็นเอส",a:"GNS-C",mw:1600,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:14.1,lng:100.55},
+  {n:"บ.กัลฟ์ เจพี ยูที",a:"GUT-C",mw:1600,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:14.103,lng:100.553},
+  {n:"บ.โกลว์ ไอพีพี",a:"GLOW-C",mw:713,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.05,lng:101.0},
+  {n:"บ.กัลฟ์ เอสอาร์ซี",a:"GSRC-C",mw:2500,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.4,lng:100.05},
+  {n:"บ.กัลฟ์ พีดี",a:"GPD-C",mw:2500,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:13.403,lng:100.053},
+  {n:"บ.หินกองเพาเวอร์",a:"HKP-C",mw:1400,f:"ก๊าซธรรมชาติ",o:"IPP",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:14.54,lng:100.95},
+  {n:"บ.ผลิตไฟฟ้าราชบุรี",a:"RB-C",mw:2041,f:"ก๊าซธรรมชาติ",o:"เครือ กฟผ.",pt:"ความร้อนร่วม",cc:"CC+Single",lat:13.5333,lng:99.8167},
+  {n:"บ.ราชบุรีเพาเวอร์",a:"RPCL-C",mw:1400,f:"ก๊าซธรรมชาติ",o:"เครือ กฟผ.",pt:"ความร้อนร่วม",cc:"Multi Shaft",lat:13.536,lng:99.819},
+  {n:"บ.ผลิตไฟฟ้าขนอม",a:"KN-C2",mw:930,f:"ก๊าซธรรมชาติ",o:"เครือ กฟผ.",pt:"ความร้อนร่วม",cc:"Single Shaft",lat:9.2,lng:99.85},
+  {n:"เทิน-หินบุน (สปป.ลาว)",a:"THB-H",mw:434,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:17.4,lng:104.8},
+  {n:"น้ำเทิน 2 (สปป.ลาว)",a:"NTN2",mw:948,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:17.97,lng:105.1},
+  {n:"น้ำงึม 2 (สปป.ลาว)",a:"NNG2",mw:596.6,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:18.6,lng:102.98},
+  {n:"ไซยะบุรี (สปป.ลาว)",a:"XYB-H",mw:1220,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:19.07,lng:101.72},
+  {n:"น้ำเงี้ยบ 1 (สปป.ลาว)",a:"NNP1",mw:269,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:18.25,lng:104.1},
+  {n:"เซเปียน เซน้ำน้อย (สปป.ลาว)",a:"XPXN",mw:354,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:15.2,lng:106.5},
+  {n:"น้ำเทิน 1 (สปป.ลาว)",a:"NTN1",mw:514.3,f:"พลังน้ำ",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:18.45,lng:104.65},
+  {n:"โรงไฟฟ้าหงสา (สปป.ลาว)",a:"HSA-T",mw:1473,f:"ถ่านหินลิกไนต์",o:"ต่างประเทศ",pt:"ความร้อน",cc:"",lat:20.0667,lng:101.25},
+  {n:"HVDC ไทย-มาเลเซีย",a:"HVDC",mw:300,f:"สายส่งเชื่อมโยง",o:"ต่างประเทศ",pt:"หมุนเวียน",cc:"",lat:6.45,lng:101.5},
+  {n:"บ.ผลิตไฟฟ้า นวนคร",a:"ENV-F",mw:90,f:"ก๊าซธรรมชาติ",o:"SPP Firm",pt:"ความร้อนร่วม",cc:"SPP Cogen",lat:14.2,lng:100.65},
+  {n:"บ.อมตะ บี.กริม ระยอง 1",a:"ABR1-F",mw:90,f:"ก๊าซธรรมชาติ",o:"SPP Firm",pt:"ความร้อนร่วม",cc:"SPP Cogen",lat:12.75,lng:101.2},
+  {n:"บ.กัลฟ์ เอ็นอาร์วี1",a:"GNRV1",mw:90,f:"ก๊าซธรรมชาติ",o:"SPP Firm",pt:"ความร้อนร่วม",cc:"SPP Cogen",lat:15.5,lng:102.35},
+  {n:"บ.ราช โคเจนเนอเรชั่น",a:"RC-F",mw:90,f:"ก๊าซธรรมชาติ",o:"SPP Firm",pt:"ความร้อนร่วม",cc:"SPP Cogen",lat:13.62,lng:100.58},
+  {n:"บ.บรีซแอนด์ไชน์ เพาเวอร์",a:"BASP",mw:75,f:"แสงอาทิตย์",o:"SPP Firm",pt:"หมุนเวียน",cc:"",lat:14.95,lng:100.6},
+  {n:"บ.เอ็นเนอร์ยี เฟิร์ส",a:"ENF-P",mw:61,f:"แสงอาทิตย์",o:"SPP Firm",pt:"หมุนเวียน",cc:"",lat:17.0,lng:99.8},
+  {n:"บ.ยะลา กรีน เพาเวอร์",a:"YGP-F",mw:20.2,f:"ชีวมวล",o:"SPP Firm",pt:"หมุนเวียน",cc:"",lat:6.5,lng:101.3},
+  {n:"บ.น้ำตาลขอนแก่น",a:"KKS-F",mw:20,f:"กากอ้อย",o:"SPP Firm",pt:"หมุนเวียน",cc:"",lat:16.35,lng:102.85},
+  {n:"บ.เฟิร์ส โคราช วินด์",a:"FKW-N",mw:90,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:14.8,lng:101.85},
+  {n:"บ.ชัยภูมิ วินด์ฟาร์ม",a:"CYPW",mw:80,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:15.8,lng:102.1},
+  {n:"บ.กฤษณา วินด์ พาวเวอร์",a:"KSNW",mw:90,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:15.35,lng:102.2},
+  {n:"บ.บ้านชวน พัฒนา",a:"BCHD",mw:80,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:15.6,lng:102.0},
+  {n:"บ.เขาค้อ วินด์",a:"KWP-N",mw:60,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:16.75,lng:101.05},
+  {n:"บ.อีเอ วินด์ หาดกังหัน 3",a:"EAH3",mw:81,f:"พลังลม",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:8.7,lng:99.85},
+  {n:"บ.อีเอ โซล่า พิษณุโลก",a:"EAP-N",mw:90,f:"แสงอาทิตย์",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:16.82,lng:100.26},
+  {n:"บ.ทีพีไอ โพลีน เพาเวอร์",a:"TPI-N2",mw:90,f:"ขยะ",o:"SPP Non-Firm",pt:"หมุนเวียน",cc:"",lat:13.06,lng:101.07},
+  {n:"บ.ผลิตไฟฟ้าและน้ำเย็น",a:"DCP-N",mw:65,f:"ก๊าซธรรมชาติ",o:"SPP Non-Firm",pt:"ความร้อนร่วม",cc:"SPP Cogen",lat:13.72,lng:100.52},
+];
+
+// ── PLANT ILLUSTRATIONS (inline SVG — no external image needed) ───────────────
+function getIllustration(p) {
+  const f = p.f;
+  const c = OC[p.o] || '#58a6ff';
+
+  // เขื่อน / พลังน้ำ
+  if (f.includes('พลังน้ำ') || f.includes('น้ำ')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d2a4a"/><stop offset="100%" stop-color="#1a4a6e"/></linearGradient>
+      <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e6fa4"/><stop offset="100%" stop-color="#0d3d5c"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#sky)"/>
+      <!-- mountains -->
+      <polygon points="0,90 60,30 120,90" fill="#0f3550" opacity=".8"/>
+      <polygon points="80,90 150,20 220,90" fill="#0d2e45" opacity=".9"/>
+      <polygon points="180,90 260,35 320,90" fill="#0f3550" opacity=".8"/>
+      <!-- dam wall -->
+      <rect x="120" y="45" width="80" height="55" rx="2" fill="#1a3a5c" stroke="#2a5a8c" stroke-width="1.5"/>
+      <rect x="125" y="50" width="70" height="6" rx="1" fill="#2a5a8c" opacity=".6"/>
+      <rect x="125" y="60" width="70" height="6" rx="1" fill="#2a5a8c" opacity=".6"/>
+      <rect x="125" y="70" width="70" height="6" rx="1" fill="#2a5a8c" opacity=".6"/>
+      <!-- spillway -->
+      <rect x="148" y="85" width="24" height="15" fill="#0d6a9e" opacity=".9"/>
+      <!-- water -->
+      <ellipse cx="160" cy="98" rx="90" ry="8" fill="url(#water)" opacity=".85"/>
+      <ellipse cx="160" cy="95" rx="110" ry="6" fill="#1e6fa4" opacity=".4"/>
+      <!-- highlight -->
+      <rect x="120" y="45" width="80" height="3" rx="1" fill="${c}" opacity=".7"/>
+      <!-- turbine symbols -->
+      <circle cx="148" cy="78" r="5" fill="none" stroke="${c}" stroke-width="1.2" opacity=".8"/>
+      <circle cx="172" cy="78" r="5" fill="none" stroke="${c}" stroke-width="1.2" opacity=".8"/>
+    </svg>`;
+
+  // แสงอาทิตย์ / Solar
+  if (f.includes('แสงอาทิตย์') || f.includes('solar') || f.includes('Solar')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a2e1a"/><stop offset="100%" stop-color="#0d1a0d"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#sg)"/>
+      <!-- sun -->
+      <circle cx="260" cy="28" r="18" fill="#f4c430" opacity=".9"/>
+      <circle cx="260" cy="28" r="22" fill="#f4c430" opacity=".2"/>
+      <!-- ground -->
+      <rect x="0" y="85" width="320" height="25" fill="#1a3010"/>
+      <!-- solar panels rows -->
+      <g opacity=".95">
+        <rect x="20" y="55" width="50" height="28" rx="2" fill="#1a2f5e" stroke="${c}" stroke-width="1"/>
+        <line x1="20" y1="69" x2="70" y2="69" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="20" y1="63" x2="70" y2="63" stroke="${c}" stroke-width=".5" opacity=".3"/>
+        <line x1="20" y1="75" x2="70" y2="75" stroke="${c}" stroke-width=".5" opacity=".3"/>
+        <line x1="37" y1="55" x2="37" y2="83" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="53" y1="55" x2="53" y2="83" stroke="${c}" stroke-width=".5" opacity=".3"/>
+      </g>
+      <g opacity=".95">
+        <rect x="85" y="52" width="50" height="28" rx="2" fill="#1a2f5e" stroke="${c}" stroke-width="1"/>
+        <line x1="85" y1="66" x2="135" y2="66" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="85" y1="60" x2="135" y2="60" stroke="${c}" stroke-width=".5" opacity=".3"/>
+        <line x1="85" y1="72" x2="135" y2="72" stroke="${c}" stroke-width=".5" opacity=".3"/>
+        <line x1="102" y1="52" x2="102" y2="80" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="118" y1="52" x2="118" y2="80" stroke="${c}" stroke-width=".5" opacity=".3"/>
+      </g>
+      <g opacity=".95">
+        <rect x="150" y="55" width="50" height="28" rx="2" fill="#1a2f5e" stroke="${c}" stroke-width="1"/>
+        <line x1="150" y1="69" x2="200" y2="69" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="167" y1="55" x2="167" y2="83" stroke="${c}" stroke-width=".8" opacity=".5"/>
+      </g>
+      <g opacity=".95">
+        <rect x="215" y="52" width="50" height="28" rx="2" fill="#1a2f5e" stroke="${c}" stroke-width="1"/>
+        <line x1="215" y1="66" x2="265" y2="66" stroke="${c}" stroke-width=".8" opacity=".5"/>
+        <line x1="232" y1="52" x2="232" y2="80" stroke="${c}" stroke-width=".8" opacity=".5"/>
+      </g>
+      <!-- glow reflect -->
+      <rect x="20" y="55" width="245" height="4" rx="1" fill="${c}" opacity=".15"/>
+    </svg>`;
+
+  // พลังลม / Wind
+  if (f.includes('พลังลม') || f.includes('ลม') || f.includes('wind') || f.includes('Wind')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d1a2e"/><stop offset="100%" stop-color="#1a2e1a"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#wg)"/>
+      <rect x="0" y="85" width="320" height="25" fill="#1a2e1a"/>
+      <!-- turbine 1 -->
+      <line x1="80" y1="85" x2="80" y2="30" stroke="#aaa" stroke-width="3"/>
+      <circle cx="80" cy="32" r="4" fill="${c}"/>
+      <line x1="80" y1="32" x2="80" y2="8" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="32" x2="60" y2="50" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="32" x2="100" y2="50" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- turbine 2 -->
+      <line x1="160" y1="85" x2="160" y2="22" stroke="#aaa" stroke-width="3.5"/>
+      <circle cx="160" cy="24" r="5" fill="${c}"/>
+      <line x1="160" y1="24" x2="160" y2="-2" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="160" y1="24" x2="137" y2="44" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="160" y1="24" x2="183" y2="44" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+      <!-- turbine 3 -->
+      <line x1="250" y1="85" x2="250" y2="30" stroke="#aaa" stroke-width="3"/>
+      <circle cx="250" cy="32" r="4" fill="${c}"/>
+      <line x1="250" y1="32" x2="250" y2="8" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="250" y1="32" x2="230" y2="50" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="250" y1="32" x2="270" y2="50" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- hills -->
+      <ellipse cx="80" cy="90" rx="60" ry="15" fill="#1a3010" opacity=".8"/>
+      <ellipse cx="200" cy="92" rx="80" ry="14" fill="#152808" opacity=".7"/>
+    </svg>`;
+
+  // ถ่านหิน / Coal
+  if (f.includes('ถ่านหิน')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1410"/><stop offset="100%" stop-color="#2a1e14"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#cg)"/>
+      <!-- smoke -->
+      <ellipse cx="130" cy="15" rx="12" ry="8" fill="#333" opacity=".5"/>
+      <ellipse cx="135" cy="8" rx="9" ry="6" fill="#444" opacity=".4"/>
+      <ellipse cx="185" cy="12" rx="10" ry="7" fill="#333" opacity=".45"/>
+      <ellipse cx="188" cy="5" rx="8" ry="5" fill="#444" opacity=".35"/>
+      <!-- chimneys -->
+      <rect x="120" y="28" width="20" height="60" rx="2" fill="#2a2218" stroke="#3a3228" stroke-width="1"/>
+      <rect x="175" y="35" width="18" height="53" rx="2" fill="#2a2218" stroke="#3a3228" stroke-width="1"/>
+      <!-- main building -->
+      <rect x="60" y="55" width="200" height="45" rx="3" fill="#241c14" stroke="#3a3228" stroke-width="1.5"/>
+      <!-- windows -->
+      <rect x="75" y="65" width="18" height="12" rx="1" fill="#f4a030" opacity=".6"/>
+      <rect x="105" y="65" width="18" height="12" rx="1" fill="#f4a030" opacity=".5"/>
+      <rect x="200" y="65" width="18" height="12" rx="1" fill="#f4a030" opacity=".6"/>
+      <rect x="228" y="65" width="18" height="12" rx="1" fill="#f4a030" opacity=".5"/>
+      <!-- cooling tower -->
+      <ellipse cx="290" cy="55" rx="22" ry="8" fill="none" stroke="#5a5248" stroke-width="1.5"/>
+      <line x1="268" y1="55" x2="272" y2="100" stroke="#5a5248" stroke-width="1.5"/>
+      <line x1="312" y1="55" x2="308" y2="100" stroke="#5a5248" stroke-width="1.5"/>
+      <ellipse cx="290" cy="100" rx="18" ry="5" fill="#3a3228"/>
+      <!-- accent line -->
+      <rect x="60" y="55" width="200" height="3" rx="1" fill="${c}" opacity=".5"/>
+      <!-- ground -->
+      <rect x="0" y="100" width="320" height="10" fill="#1a1410"/>
+    </svg>`;
+
+  // ก๊าซธรรมชาติ / Combined Cycle
+  if (f.includes('ก๊าซ') || f.includes('Gas') || p.pt === 'ความร้อนร่วม') return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d1a2e"/><stop offset="100%" stop-color="#1a2030"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#gg)"/>
+      <!-- main building -->
+      <rect x="40" y="40" width="240" height="60" rx="3" fill="#162030" stroke="#2a3a50" stroke-width="1.5"/>
+      <!-- roof detail -->
+      <rect x="40" y="40" width="240" height="5" rx="1" fill="${c}" opacity=".6"/>
+      <!-- turbine hall -->
+      <rect x="60" y="48" width="100" height="44" rx="2" fill="#1a2a3e" stroke="#2a4060" stroke-width="1"/>
+      <rect x="170" y="52" width="90" height="40" rx="2" fill="#1a2a3e" stroke="#2a4060" stroke-width="1"/>
+      <!-- exhaust stack -->
+      <rect x="110" y="15" width="16" height="40" rx="3" fill="#1e3050" stroke="#2a4060" stroke-width="1"/>
+      <rect x="220" y="22" width="14" height="35" rx="3" fill="#1e3050" stroke="#2a4060" stroke-width="1"/>
+      <!-- heat shimmer -->
+      <path d="M118 15 Q120 8 122 15" stroke="${c}" stroke-width="1.2" fill="none" opacity=".6"/>
+      <path d="M228 22 Q230 15 232 22" stroke="${c}" stroke-width="1.2" fill="none" opacity=".6"/>
+      <!-- windows / glow -->
+      <rect x="72" y="58" width="14" height="9" rx="1" fill="${c}" opacity=".35"/>
+      <rect x="92" y="58" width="14" height="9" rx="1" fill="${c}" opacity=".3"/>
+      <rect x="112" y="58" width="14" height="9" rx="1" fill="${c}" opacity=".35"/>
+      <rect x="180" y="62" width="12" height="8" rx="1" fill="${c}" opacity=".3"/>
+      <rect x="200" y="62" width="12" height="8" rx="1" fill="${c}" opacity=".35"/>
+      <rect x="220" y="62" width="12" height="8" rx="1" fill="${c}" opacity=".3"/>
+      <!-- ground -->
+      <rect x="0" y="100" width="320" height="10" fill="#0d1520"/>
+      <!-- pipes -->
+      <line x1="40" y1="85" x2="0" y2="85" stroke="#2a4060" stroke-width="3"/>
+      <line x1="280" y1="80" x2="320" y2="80" stroke="#2a4060" stroke-width="3"/>
+    </svg>`;
+
+  // ชีวมวล / Biomass / กากอ้อย / ขยะ
+  if (f.includes('ชีวมวล') || f.includes('กากอ้อย') || f.includes('แกลบ') || f.includes('ขยะ') || f.includes('ปาล์ม') || f.includes('ยาง')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d1a10"/><stop offset="100%" stop-color="#1a2e14"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#bg2)"/>
+      <!-- trees bg -->
+      <polygon points="20,85 35,55 50,85" fill="#1a3a10" opacity=".7"/>
+      <polygon points="260,85 278,48 296,85" fill="#1a3a10" opacity=".6"/>
+      <!-- smoke -->
+      <ellipse cx="155" cy="18" rx="11" ry="7" fill="#5a6a50" opacity=".5"/>
+      <ellipse cx="158" cy="10" rx="8" ry="5" fill="#4a5a40" opacity=".4"/>
+      <!-- chimney -->
+      <rect x="147" y="25" width="16" height="45" rx="2" fill="#2a3a20" stroke="${c}" stroke-width="1" opacity=".9"/>
+      <!-- building -->
+      <rect x="55" y="52" width="210" height="48" rx="3" fill="#1e3018" stroke="#3a5028" stroke-width="1.5"/>
+      <rect x="55" y="52" width="210" height="4" rx="1" fill="${c}" opacity=".5"/>
+      <!-- windows -->
+      <rect x="75" y="64" width="16" height="10" rx="1" fill="#f4c030" opacity=".55"/>
+      <rect x="105" y="64" width="16" height="10" rx="1" fill="#f4c030" opacity=".45"/>
+      <rect x="190" y="64" width="16" height="10" rx="1" fill="#f4c030" opacity=".55"/>
+      <rect x="220" y="64" width="16" height="10" rx="1" fill="#f4c030" opacity=".45"/>
+      <!-- biomass pile -->
+      <ellipse cx="290" cy="95" rx="24" ry="10" fill="#2a3a20"/>
+      <ellipse cx="290" cy="92" rx="18" ry="7" fill="#3a5028"/>
+      <!-- ground -->
+      <rect x="0" y="100" width="320" height="10" fill="#152010"/>
+    </svg>`;
+
+  // สายส่ง HVDC / Transmission
+  if (f.includes('สายส่ง') || f.includes('HVDC')) return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d1a2e"/><stop offset="100%" stop-color="#1a1a2e"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#hg)"/>
+      <!-- towers -->
+      <g stroke="#5a6a80" stroke-width="1.5">
+        <line x1="60" y1="90" x2="60" y2="20"/><line x1="50" y1="30" x2="70" y2="30"/>
+        <line x1="48" y1="45" x2="72" y2="45"/>
+        <line x1="50" y1="30" x2="60" y2="50"/><line x1="70" y1="30" x2="60" y2="50"/>
+      </g>
+      <g stroke="#5a6a80" stroke-width="1.5">
+        <line x1="160" y1="90" x2="160" y2="15"/><line x1="148" y1="27" x2="172" y2="27"/>
+        <line x1="146" y1="42" x2="174" y2="42"/>
+        <line x1="148" y1="27" x2="160" y2="48"/><line x1="172" y1="27" x2="160" y2="48"/>
+      </g>
+      <g stroke="#5a6a80" stroke-width="1.5">
+        <line x1="260" y1="90" x2="260" y2="20"/><line x1="250" y1="30" x2="270" y2="30"/>
+        <line x1="248" y1="45" x2="272" y2="45"/>
+        <line x1="250" y1="30" x2="260" y2="50"/><line x1="270" y1="30" x2="260" y2="50"/>
+      </g>
+      <!-- cables -->
+      <path d="M50 30 Q105 55 148 27" stroke="${c}" stroke-width="1.2" fill="none" opacity=".7"/>
+      <path d="M50 45 Q105 68 146 42" stroke="${c}" stroke-width="1.2" fill="none" opacity=".7"/>
+      <path d="M172 27 Q216 52 250 30" stroke="${c}" stroke-width="1.2" fill="none" opacity=".7"/>
+      <path d="M174 42 Q218 65 248 45" stroke="${c}" stroke-width="1.2" fill="none" opacity=".7"/>
+      <!-- ground -->
+      <rect x="0" y="90" width="320" height="20" fill="#0d1520"/>
+    </svg>`;
+
+  // น้ำมัน / Diesel (default thermal)
+  return `
+    <svg viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" width="100%" height="110">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a1410"/><stop offset="100%" stop-color="#241a10"/></linearGradient></defs>
+      <rect width="320" height="110" fill="url(#dg)"/>
+      <ellipse cx="160" cy="20" rx="15" ry="10" fill="#4a3a28" opacity=".5"/>
+      <rect x="143" y="25" width="14" height="50" rx="2" fill="#2a2218" stroke="#3a3228" stroke-width="1"/>
+      <rect x="50" y="45" width="220" height="55" rx="3" fill="#201a12" stroke="#3a3228" stroke-width="1.5"/>
+      <rect x="50" y="45" width="220" height="4" rx="1" fill="${c}" opacity=".5"/>
+      <rect x="70" y="58" width="16" height="10" rx="1" fill="#e8a030" opacity=".5"/>
+      <rect x="100" y="58" width="16" height="10" rx="1" fill="#e8a030" opacity=".45"/>
+      <rect x="200" y="58" width="16" height="10" rx="1" fill="#e8a030" opacity=".5"/>
+      <rect x="230" y="58" width="16" height="10" rx="1" fill="#e8a030" opacity=".45"/>
+      <rect x="0" y="100" width="320" height="10" fill="#150f08"/>
+    </svg>`;
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const OC = {
+  'กฟผ.':'#58a6ff','IPP':'#3fb950','เครือ กฟผ.':'#79c0ff',
+  'SPP Firm':'#d2a679','SPP Non-Firm':'#e8916a','ต่างประเทศ':'#bc8cff'
+};
+const ALL_OWNERS = Object.keys(OC);
+const ALL_PTYPES = ['หมุนเวียน','ความร้อน','ความร้อนร่วม'];
+const ALL_FUELS  = [...new Set(PLANTS.map(p=>p.f))].sort();
+
+const activeOwners = new Set(ALL_OWNERS);
+const activePtypes = new Set(ALL_PTYPES);
+const activeFuels  = new Set(ALL_FUELS);
+
+let szScale = 1, searchQ = '', isDark = true;
+let map, tileL, markers = [], donutChart;
+
+// ── MAP INIT ──────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', { center:[13.0,101.5], zoom:6, zoomControl:false, preferCanvas:true });
+  L.control.zoom({ position:'bottomright' }).addTo(map);
+  setTile('dark', true);
+  buildFilters();
+  renderMarkers();
+  buildLegend();
+}
+
+// ── TILES ─────────────────────────────────────────────────────────────────────
+const TILES = {
+  dark:      { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', opacity:0.45 },
+  topo:      { url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',   opacity:0.65 },
+  satellite: { url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', opacity:1 },
+};
+let currentTileType = 'dark';
+
+function setTile(type, silent) {
+  currentTileType = type;
+  if (tileL) map.removeLayer(tileL);
+  tileL = L.tileLayer(TILES[type].url, { attribution:'', maxZoom:19, opacity: isDark ? TILES[type].opacity : 1 }).addTo(map);
+}
+
+function setLayer(type, btn) {
+  document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  setTile(type);
+}
+
+// ── THEME TOGGLE ──────────────────────────────────────────────────────────────
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  // update tile opacity
+  setTile(currentTileType, true);
+  // re-render donut with updated text colors
+  renderDonut(visible());
+}
+
+// ── MARKERS ───────────────────────────────────────────────────────────────────
+function radius(mw) {
+  if (mw < 100)  return 5  * szScale;
+  if (mw < 500)  return 9  * szScale;
+  if (mw < 1500) return 14 * szScale;
+  return 20 * szScale;
+}
+
+function makeIcon(p) {
+  const r = radius(p.mw);
+  const c = OC[p.o] || '#888';
+  let svg, w, h;
+  if (p.pt === 'ความร้อน') {
+    w = h = r*2+4;
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+      <rect x="2" y="2" width="${w-4}" height="${h-4}" rx="2" fill="${c}" fill-opacity="0.85" stroke="${c}" stroke-width="1.5"/>
+    </svg>`;
+  } else if (p.pt === 'ความร้อนร่วม') {
+    const d=r*2.2; w=h=d+4;
+    const cx=w/2,cy=h/2,hd=d/2;
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+      <polygon points="${cx},${cy-hd} ${cx+hd},${cy} ${cx},${cy+hd} ${cx-hd},${cy}" fill="${c}" fill-opacity="0.85" stroke="${c}" stroke-width="1.5"/>
+    </svg>`;
+  } else {
+    w=h=r*2+4;
+    svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+      <circle cx="${w/2}" cy="${h/2}" r="${r}" fill="${c}" fill-opacity="0.8" stroke="${c}" stroke-width="1.5"/>
+    </svg>`;
+  }
+  return L.divIcon({ html:svg, className:'', iconSize:[w,h], iconAnchor:[w/2,h/2] });
+}
+
+function visible() {
+  return PLANTS.filter(p =>
+    activeOwners.has(p.o) && activePtypes.has(p.pt) && activeFuels.has(p.f) &&
+    (!searchQ || p.n.toLowerCase().includes(searchQ) || p.a.toLowerCase().includes(searchQ))
+  );
+}
+
+function renderMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  const vis = visible();
+  vis.forEach(p => {
+    const m = L.marker([p.lat,p.lng], { icon:makeIcon(p) });
+    const c = OC[p.o]||'#888';
+    m.bindTooltip(`
+      <div class="tt-name">${p.n}</div>
+      <div class="tt-row">
+        <span class="tt-mw">${p.mw.toLocaleString()} MW</span>·
+        <span>${p.f}</span>
+      </div>
+      <div class="tt-row" style="margin-top:2px">
+        <span style="color:${c}">${p.o}</span>·
+        <span>${p.pt}</span>
+        ${p.cc?`· <span>${p.cc}</span>`:''}
+      </div>`, { direction:'top', offset:[0,-4] });
+    m.on('click', () => showDetail(p));
+    m.addTo(map);
+    markers.push(m);
+  });
+  updateStats(vis);
+  renderDonut(vis);
+  document.getElementById('map-cnt').textContent = vis.length+' โรง';
+}
+
+// ── DETAIL PANEL WITH IMAGE ───────────────────────────────────────────────────
+// cache loaded unit data
+let unitDataCache = null;
+function getUnitData(abbr, cb) {
+  if (unitDataCache) { cb(unitDataCache.find(d=>d.abbr===abbr)||null); return; }
+  fetch('data.json').then(r=>r.json()).then(d=>{ unitDataCache=d; cb(d.find(x=>x.abbr===abbr)||null); }).catch(()=>cb(null));
+}
+
+function showDetail(p) {
+  const c = OC[p.o]||'#888';
+  document.getElementById('d-empty').style.display = 'none';
+  const dc = document.getElementById('d-card');
+  dc.className = 'detail-card show';
+
+  // Render base card first (fast)
+  dc.innerHTML = `
+    <div class="detail-img-wrap" style="position:relative;height:110px;overflow:hidden;background:#0d1117">
+      ${getIllustration(p)}
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.55) 0%,transparent 55%)"></div>
+      <span style="position:absolute;top:8px;right:8px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;background:${c}30;color:${c};border:1px solid ${c}60">${p.pt}</span>
+      <div style="position:absolute;bottom:8px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8)">${p.mw.toLocaleString()} <span style="font-size:10px;font-weight:400">MW</span></div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-name" style="color:${c}">${p.n}</div>
+      <div class="detail-grid">
+        <div class="detail-row"><span class="dk">ชื่อย่อ</span><span class="dv" style="font-family:'IBM Plex Mono',monospace">${p.a}</span></div>
+        <div class="detail-row"><span class="dk">ผู้ผลิต</span><span class="dv">${p.o}</span></div>
+        <div class="detail-row"><span class="dk">เชื้อเพลิง</span><span class="dv">${p.f}</span></div>
+        <div class="detail-row"><span class="dk">CC Type</span><span class="dv">${p.cc||'—'}</span></div>
+      </div>
+      <div id="units-section" style="margin-top:8px"></div>
+    </div>`;
+
+  // Load units from data.json
+  getUnitData(p.a, function(fullData) {
+    const sec = document.getElementById('units-section');
+    if (!sec) return;
+    if (!fullData || !fullData.units || fullData.units.length === 0) {
+      sec.innerHTML = '';
+      return;
+    }
+    const units = fullData.units;
+    sec.innerHTML = `
+      <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">
+        Unit ย่อย (${units.length} unit)
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;max-height:90px;overflow-y:auto">
+        ${units.map(u=>`
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0">
+            <span style="font-family:'IBM Plex Mono',monospace;color:${c};font-size:10px;min-width:56px">${u.abbr}</span>
+            <div style="flex:1;height:4px;background:var(--border2);border-radius:2px;overflow:hidden">
+              <div style="width:${(u.mw/p.mw*100).toFixed(1)}%;height:100%;background:${c};opacity:.75;border-radius:2px"></div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;color:var(--text);min-width:42px;text-align:right;font-size:10px">${u.mw.toLocaleString('th',{maximumFractionDigits:1})}</span>
+          </div>`).join('')}
+      </div>`;
+  });
+
+  map.panTo([p.lat,p.lng], { animate:true, duration:0.5 });
+}
+
+// ── STATS & DONUT ─────────────────────────────────────────────────────────────
+function updateStats(vis) {
+  const total = vis.reduce((s,p)=>s+p.mw,0);
+  const top   = vis.length ? vis.reduce((a,b)=>a.mw>b.mw?a:b) : {mw:0,a:''};
+  const avg   = vis.length ? total/vis.length : 0;
+  document.getElementById('s-count').textContent = vis.length.toLocaleString();
+  document.getElementById('s-mw').textContent    = Math.round(total).toLocaleString();
+  document.getElementById('s-max').textContent   = Math.round(top.mw).toLocaleString();
+  document.getElementById('s-max-n').textContent = top.a||'—';
+  document.getElementById('s-avg').textContent   = Math.round(avg).toLocaleString();
+}
+
+function renderDonut(vis) {
+  const vals = ALL_OWNERS.map(o=>vis.filter(p=>p.o===o).reduce((s,p)=>s+p.mw,0));
+  const tot  = vals.reduce((a,b)=>a+b,0);
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('miniDonut'),{
+    type:'doughnut',
+    data:{ labels:ALL_OWNERS, datasets:[{data:vals,backgroundColor:ALL_OWNERS.map(o=>OC[o]),borderWidth:0,hoverOffset:3}] },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'60%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor: isDark ? '#1c2330' : '#ffffff',
+          borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+          borderWidth:1,
+          titleColor: isDark ? '#e6edf3' : '#1a1f2e',
+          bodyColor: isDark ? '#7d8590' : '#6b7280',
+          callbacks:{label:c=>` ${Math.round(c.parsed).toLocaleString()} MW (${tot>0?(c.parsed/tot*100).toFixed(1):0}%)`}
+        }
+      }
+    }
+  });
+}
+
+// ── FILTER BUILDERS ───────────────────────────────────────────────────────────
+function buildFilters() {
+  const fgo = document.getElementById('fg-owner');
+  ALL_OWNERS.forEach(o=>{
+    const cnt = PLANTS.filter(p=>p.o===o).length;
+    fgo.innerHTML+=`<div class="fi on" data-g="owner" data-v="${o}" onclick="toggle(this,'owner','${o}')">
+      <div class="fi-dot" style="background:${OC[o]}"></div>
+      <span class="fi-name">${o}</span><span class="fi-cnt">${cnt}</span></div>`;
+  });
+  const fgp = document.getElementById('fg-ptype');
+  [{k:'หมุนเวียน',s:'● วงกลม'},{k:'ความร้อน',s:'■ สี่เหลี่ยม'},{k:'ความร้อนร่วม',s:'◆ เพชร'}].forEach(({k,s})=>{
+    fgp.innerHTML+=`<div class="fi on" data-g="ptype" data-v="${k}" onclick="toggle(this,'ptype','${k}')">
+      <div class="fi-dot" style="background:#7d8590"></div>
+      <span class="fi-name">${k}</span><span class="fi-cnt" style="color:var(--muted)">${s}</span></div>`;
+  });
+  const fgf = document.getElementById('fg-fuel');
+  ALL_FUELS.forEach(f=>{
+    fgf.innerHTML+=`<div class="fi on" data-g="fuel" data-v="${f}" onclick="toggle(this,'fuel','${f}')">
+      <div class="fi-dot" style="background:#7d8590"></div>
+      <span class="fi-name">${f}</span></div>`;
+  });
+}
+
+function toggle(el,g,v){
+  el.classList.toggle('on');
+  const s=g==='owner'?activeOwners:g==='ptype'?activePtypes:activeFuels;
+  s.has(v)?s.delete(v):s.add(v);
+  renderMarkers();
+}
+function toggleAll(g){
+  const items=document.querySelectorAll(`[data-g="${g}"]`);
+  const s=g==='owner'?activeOwners:g==='ptype'?activePtypes:activeFuels;
+  const all=g==='owner'?ALL_OWNERS:g==='ptype'?ALL_PTYPES:ALL_FUELS;
+  const allOn=s.size===all.length;
+  all.forEach(v=>allOn?s.delete(v):s.add(v));
+  items.forEach(el=>el.classList.toggle('on',s.has(el.dataset.v)));
+  renderMarkers();
+}
+function onSize(v){ szScale=parseFloat(v); document.getElementById('szVal').textContent=parseFloat(v).toFixed(1)+'×'; renderMarkers(); }
+function onSearch(v){ searchQ=v.toLowerCase(); renderMarkers(); }
+
+// ── LEGEND ────────────────────────────────────────────────────────────────────
+function buildLegend(){
+  const el=document.getElementById('legend-rows');
+  ALL_OWNERS.forEach(o=>{
+    el.innerHTML+=`<div class="lg-row"><div class="lg-c" style="width:10px;height:10px;background:${OC[o]}"></div><span>${o}</span></div>`;
+  });
+}
+
+window.addEventListener('load', initMap);
+</script>
+
+<script>
+// ── SESSION GUARD ─────────────────────────────────────────────────────────────
+(function() {
+  const user = sessionStorage.getItem('egat_user');
+  if (!user) {
+    // Not logged in — redirect back to dashboard (login page)
+    window.location.replace('index.html');
+  } else {
+    // Show username on logout button
+    const btn = document.getElementById('logoutBtn');
+    if (btn) btn.textContent = user + ' · ออกจากระบบ';
+  }
+})();
+
+function logout() {
+  sessionStorage.removeItem('egat_user');
+  window.location.replace('index.html');
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กำลังผลิตตามสัญญาของระบบไฟฟ้า</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --c-egat:#58a6ff;--c-ipp:#3fb950;--c-affiliate:#79c0ff;
+  --c-sppf:#d2a679;--c-sppnf:#e8916a;--c-foreign:#bc8cff;
+  --c-re:#3fb950;--c-thermal:#d29922;--c-cc:#58a6ff;
+  --c-single:#58a6ff;--c-multi:#3fb950;--c-ccsc:#d29922;--c-cogen:#79c0ff;
+  font-family:'IBM Plex Sans Thai',sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2330;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --text:#e6edf3;--muted:#7d8590;
+  --accent:#58a6ff;--green:#3fb950;--amber:#d29922;
+  --red:#f85149;--teal:#2ea8af;--purple:#bc8cff;--coral:#ff7b72;
+  --nav-bg:rgba(13,17,23,0.92);
+}
+[data-theme="light"]{
+  --bg:#f4f6f9;--surface:#ffffff;--surface2:#eef1f5;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+  --text:#1a1f2e;--muted:#6b7280;
+  --accent:#1a6fc4;--green:#1a7a36;--amber:#a67c00;
+  --red:#c0392b;--teal:#0e7a80;--purple:#6d28d9;--coral:#c0432a;
+  --nav-bg:rgba(255,255,255,0.95);
+}
+
+/* ── LOGIN OVERLAY ── */
+.login-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+.login-card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:16px;padding:40px 36px;width:360px;
+  box-shadow:0 24px 60px rgba(0,0,0,0.4);
+}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#1d6fa4,#0f4a7a);display:flex;align-items:center;justify-content:center}
+.login-logo-icon svg{width:20px;height:20px}
+.login-logo-text{font-size:15px;font-weight:600;color:var(--text)}
+.login-logo-sub{font-size:11px;color:var(--muted)}
+.login-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.login-label{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px;display:block}
+.login-input{
+  width:100%;padding:10px 14px;margin-bottom:14px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:8px;color:var(--text);font-size:13px;
+  font-family:'IBM Plex Sans Thai',sans-serif;outline:none;transition:border-color .15s;
+}
+.login-input:focus{border-color:var(--accent)}
+.login-input::placeholder{color:var(--muted)}
+.login-btn{
+  width:100%;padding:11px;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#1d6fa4,#0f4a7a);color:#fff;
+  font-size:14px;font-weight:600;font-family:'IBM Plex Sans Thai',sans-serif;
+  transition:opacity .15s;margin-top:4px;
+}
+.login-btn:hover{opacity:.9}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;text-align:center;min-height:18px}
+.login-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.login-hint kbd{background:var(--surface2);padding:1px 6px;border-radius:4px;border:1px solid var(--border2);font-family:'IBM Plex Mono',monospace;font-size:11px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(8px)}}
+.shake{animation:shake .3s ease}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── TOP NAV ── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 52px;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-logo {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, #1d6fa4 0%, #0f4a7a 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.nav-logo svg { width: 16px; height: 16px; }
+.nav-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.nav-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.nav-badge {
+  padding: 2px 8px; border-radius: 20px;
+  background: rgba(88,166,255,0.12); color: var(--accent);
+  font-size: 11px; border: 1px solid rgba(88,166,255,0.25);
+}
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 14px; border-radius: 6px; font-size: 13px;
+  cursor: pointer; color: var(--muted); transition: all .15s;
+  border: none; background: none;
+}
+.nav-tab:hover { color: var(--text); background: var(--surface); }
+.nav-tab.active { color: var(--text); background: var(--surface2); }
+
+/* ── MAIN LAYOUT ── */
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 52px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  position: sticky; top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+}
+.sb-section { margin-bottom: 20px; }
+.sb-label {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 8px; padding: 0 6px;
+}
+.filter-group { display: flex; flex-direction: column; gap: 2px; }
+.filter-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; color: var(--muted); transition: all .12s;
+  user-select: none;
+}
+.filter-item:hover { background: var(--surface2); color: var(--text); }
+.filter-item.active { color: var(--text); }
+.filter-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  opacity: 0.4; transition: opacity .12s;
+}
+.filter-item.active .filter-dot { opacity: 1; }
+.filter-label { flex: 1; }
+.filter-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; color: var(--muted);
+}
+.filter-toggle-all {
+  font-size: 11px; color: var(--accent); cursor: pointer;
+  padding: 4px 8px; margin-bottom: 4px;
+}
+.filter-toggle-all:hover { text-decoration: underline; }
+.sb-divider { height: 1px; background: var(--border); margin: 4px 0 16px; }
+
+/* ── CONTENT ── */
+.content { padding: 20px 24px; overflow-x: hidden; }
+
+/* ── KPI STRIP ── */
+.kpi-strip { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 20px; }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative; overflow: hidden;
+  transition: border-color .15s;
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 3px; height: 100%; border-radius: 10px 0 0 10px;
+}
+.kpi-card.blue::before { background: var(--accent); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.purple::before { background: var(--purple); }
+.kpi-card.teal::before { background: var(--teal); }
+.kpi-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.kpi-val { font-size: 22px; font-weight: 600; line-height: 1; font-family: 'IBM Plex Mono', monospace; }
+.kpi-val.blue { color: var(--accent); }
+.kpi-val.green { color: var(--green); }
+.kpi-val.amber { color: var(--amber); }
+.kpi-val.purple { color: var(--purple); }
+.kpi-val.teal { color: var(--teal); }
+.kpi-unit { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── SECTION GRID ── */
+.section-title {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 12px;
+}
+.grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.grid-full { margin-bottom: 16px; }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+.chart-card:hover { border-color: var(--border2); }
+.chart-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+.chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.leg-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── HORIZONTAL BARS ── */
+.hbar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.hbar-name { font-size: 11px; color: var(--muted); width: 130px; text-align: right; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-name.w80 { width: 80px; }
+.hbar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+.hbar-val { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); width: 52px; }
+
+/* ── DONUT COMBO ── */
+.donut-combo { display: flex; align-items: center; gap: 16px; }
+.donut-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.donut-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.donut-center-val { font-size: 16px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; color: var(--text); }
+.donut-center-label { font-size: 9px; color: var(--muted); }
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.dl { display: flex; align-items: center; gap: 7px; }
+.dl-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.dl-name { font-size: 11px; color: var(--muted); flex: 1; }
+.dl-pct { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; }
+.dl-mw { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px;
+}
+.data-table th {
+  background: var(--surface2); color: var(--muted);
+  padding: 8px 12px; text-align: left;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+.data-table th:hover { color: var(--text); }
+.data-table td {
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text); white-space: nowrap;
+}
+.data-table tr:hover td { background: var(--surface2); }
+.data-table tr:last-child td { border-bottom: none; }
+.tag {
+  display: inline-block; padding: 2px 7px;
+  border-radius: 20px; font-size: 10px; font-weight: 500;
+  white-space: nowrap;
+}
+.mw-bar-cell { display: flex; align-items: center; gap: 6px; }
+.mw-mini-track { width: 60px; height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.mw-mini-fill { height: 100%; border-radius: 2px; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── SEARCH ── */
+.search-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.search-input {
+  flex: 1; padding: 7px 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 12px;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  outline: none; transition: border-color .12s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--muted); }
+.result-count { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.sort-icon { font-size: 9px; margin-left: 2px; }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-top: 1px solid var(--border); }
+.page-info { font-size: 11px; color: var(--muted); }
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; cursor: pointer; color: var(--muted);
+  background: none; border: 1px solid var(--border); transition: all .12s;
+}
+.page-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.page-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+/* ── CHART VIEW ── */
+#view-charts { display: block; }
+#view-table { display: none; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ── FADE IN ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kpi-card { animation: fadeUp .3s ease both; }
+.kpi-card:nth-child(1){animation-delay:.05s}
+.kpi-card:nth-child(2){animation-delay:.1s}
+.kpi-card:nth-child(3){animation-delay:.15s}
+.kpi-card:nth-child(4){animation-delay:.2s}
+.kpi-card:nth-child(5){animation-delay:.25s}
+.chart-card { animation: fadeUp .35s ease both; animation-delay: .2s; }
+
+/* ── TOOLTIP OVERRIDE ── */
+.chart-tooltip {
+  background: var(--surface2) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 8px !important;
+  color: var(--text) !important;
+  font-family: 'IBM Plex Sans Thai', sans-serif !important;
+  font-size: 12px !important;
+}
+
+</style>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#161b22" id="themeColorMeta">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Power Dash">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="72x72"  href="icons/icon-72.png">
+  <link rel="apple-touch-icon" sizes="96x96"  href="icons/icon-96.png">
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-logo">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#58a6ff"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="#3fb950"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="#d29922"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="#bc8cff"/></svg>
+    </div>
+    <div>
+      <div class="nav-title">กำลังผลิตตามสัญญาของระบบ</div>
+      <div class="nav-sub">ณ 16 กุมภาพันธ์ 2569</div>
+    </div>
+    <div class="nav-badge">49,410 MW</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchView('charts',this)">ภาพรวม</button>
+      <button class="nav-tab" onclick="switchView('table',this)">รายโรง</button>
+    </div>
+    <div style="width:1px;height:20px;background:var(--border2);margin:0 4px"></div>
+    <a href="map.html" style="text-decoration:none">
+      <button class="nav-tab" style="display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:6px;background:transparent">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2C5.8 2 4 3.8 4 6c0 3 4 8 4 8s4-5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="8" cy="6" r="1.5"/></svg>
+        แผนที่
+      </button>
+    </a>
+    <button onclick="toggleTheme()" id="themeBtn" style="width:32px;height:32px;border-radius:8px;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text)" title="เปลี่ยน Theme">🌙</button>
+    <button onclick="logout()" style="padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'IBM Plex Sans Thai',sans-serif" id="logoutBtn"></button>
+  </div>
+</nav>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#58a6ff"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="#3fb950"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="#d29922"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="#bc8cff"/></svg>
+      </div>
+      <div>
+        <div class="login-logo-text">ระบบกำลังผลิตไฟฟ้า</div>
+        <div class="login-logo-sub">กฟผ. — ณ 16 กุมภาพันธ์ 2569</div>
+      </div>
+    </div>
+    <div class="login-title">เข้าสู่ระบบ</div>
+    <div class="login-sub">กรุณาระบุชื่อผู้ใช้และรหัสผ่าน</div>
+    <label class="login-label">ชื่อผู้ใช้</label>
+    <input class="login-input" id="loginUser" type="text" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    <label class="login-label">รหัสผ่าน</label>
+    <input class="login-input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-hint">
+      ทดสอบ: <kbd>admin</kbd> / <kbd>egat2569</kbd>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-section">
+    <div class="sb-label">ประเภทผู้ผลิต</div>
+    <div class="filter-toggle-all" onclick="toggleAll('owner')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-owner">
+      <div class="filter-item active" data-group="owner" data-val="กฟผ." onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-egat)"></div>
+        <span class="filter-label">กฟผ.</span>
+        <span class="filter-count" id="cnt-owner-egat"></span>
+      </div>
+      <div class="filter-item active" data-group="owner" data-val="IPP" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-ipp)"></div>
+        <span class="filter-label">IPP</span>
+        <span class="filter-count" id="cnt-owner-ipp"></span>
+      </div>
+      <div class="filter-item active" data-group="owner" data-val="บริษัทในเครือ กฟผ." onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-affiliate)"></div>
+        <span class="filter-label">บริษัทในเครือ กฟผ.</span>
+        <span class="filter-count" id="cnt-owner-aff"></span>
+      </div>
+      <div class="filter-item active" data-group="owner" data-val="SPP Firm" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-sppf)"></div>
+        <span class="filter-label">SPP Firm</span>
+        <span class="filter-count" id="cnt-owner-sppf"></span>
+      </div>
+      <div class="filter-item active" data-group="owner" data-val="SPP Non-Firm" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-sppnf)"></div>
+        <span class="filter-label">SPP Non-Firm</span>
+        <span class="filter-count" id="cnt-owner-sppnf"></span>
+      </div>
+      <div class="filter-item active" data-group="owner" data-val="ผู้ผลิตต่างประเทศ" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-foreign)"></div>
+        <span class="filter-label">ต่างประเทศ</span>
+        <span class="filter-count" id="cnt-owner-foreign"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sb-divider"></div>
+
+  <div class="sb-section">
+    <div class="sb-label">ประเภทโรงไฟฟ้า</div>
+    <div class="filter-toggle-all" onclick="toggleAll('plantType')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-plantType">
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังงานหมุนเวียน" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-re)"></div>
+        <span class="filter-label">พลังงานหมุนเวียน</span>
+      </div>
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังความร้อน" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-thermal)"></div>
+        <span class="filter-label">พลังความร้อน</span>
+      </div>
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังความร้อนร่วม" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:var(--c-cc)"></div>
+        <span class="filter-label">พลังความร้อนร่วม</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sb-divider"></div>
+
+  <div class="sb-section">
+    <div class="sb-label">ภาค</div>
+    <div class="filter-toggle-all" onclick="toggleAll('region')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-region">
+      <div class="filter-item active" data-group="region" data-val="เขตนครหลวง" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:#58a6ff"></div>
+        <span class="filter-label">เขตนครหลวง</span>
+      </div>
+      <div class="filter-item active" data-group="region" data-val="ภาคกลาง" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:#3fb950"></div>
+        <span class="filter-label">ภาคกลาง</span>
+      </div>
+      <div class="filter-item active" data-group="region" data-val="ภาคตะวันออกเฉียงเหนือ" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:#d29922"></div>
+        <span class="filter-label">ภาคตะวันออกเฉียงเหนือ</span>
+      </div>
+      <div class="filter-item active" data-group="region" data-val="ภาคใต้" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:#bc8cff"></div>
+        <span class="filter-label">ภาคใต้</span>
+      </div>
+      <div class="filter-item active" data-group="region" data-val="ภาคเหนือ" onclick="toggleFilter(this)">
+        <div class="filter-dot" style="background:#ff7b72"></div>
+        <span class="filter-label">ภาคเหนือ</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="content">
+
+  <!-- KPIs -->
+  <div class="kpi-strip" id="kpiStrip">
+    <div class="kpi-card blue"><div class="kpi-label">กำลังผลิตรวม</div><div class="kpi-val blue" id="kpi-total">—</div><div class="kpi-unit">เมกะวัตต์</div></div>
+    <div class="kpi-card green"><div class="kpi-label">โรงไฟฟ้า กฟผ.</div><div class="kpi-val green" id="kpi-egat">—</div><div class="kpi-unit" id="kpi-egat-pct">—</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">ผู้ผลิตเอกชน</div><div class="kpi-val amber" id="kpi-private">—</div><div class="kpi-unit" id="kpi-private-pct">—</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">ต่างประเทศ</div><div class="kpi-val purple" id="kpi-foreign">—</div><div class="kpi-unit" id="kpi-foreign-pct">—</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">พลังงานหมุนเวียน</div><div class="kpi-val teal" id="kpi-re">—</div><div class="kpi-unit" id="kpi-re-pct">—</div></div>
+  </div>
+
+  <!-- CHARTS VIEW -->
+  <div id="view-charts">
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-title">กำลังผลิตรายภาค แยกตามประเภทผู้ผลิต</div>
+        <div class="legend">
+          <span class="leg"><span class="leg-sq" style="background:var(--c-egat)"></span>กฟผ.</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-ipp)"></span>IPP</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-affiliate)"></span>เครือ กฟผ.</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-sppf)"></span>SPP Firm</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-sppnf)"></span>SPP Non-Firm</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-foreign)"></span>ต่างประเทศ</span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="chartRegion"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">สัดส่วนตามประเภทผู้ผลิต</div>
+        <div class="donut-combo" style="margin-top:8px">
+          <div class="donut-wrap">
+            <canvas id="chartDonut"></canvas>
+            <div class="donut-center">
+              <div class="donut-center-val" id="donut-total-val">—</div>
+              <div class="donut-center-label">MW รวม</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="chart-card">
+        <div class="chart-title">แยกตามประเภทโรงไฟฟ้า</div>
+        <div class="legend">
+          <span class="leg"><span class="leg-sq" style="background:var(--c-re)"></span>หมุนเวียน</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-thermal)"></span>ความร้อน</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--c-cc)"></span>ความร้อนร่วม</span>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="chartPlantType"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">เชื้อเพลิงหลัก (Top 6)</div>
+        <div id="fuelBars" style="margin-top:4px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">ก๊าซธรรมชาติ แยก Combined Cycle</div>
+        <div id="ccBars" style="margin-top:4px"></div>
+      </div>
+    </div>
+
+    <div class="grid-full">
+      <div class="chart-card">
+        <div class="chart-title">20 โรงไฟฟ้ากำลังผลิตสูงสุด</div>
+        <div style="position:relative;height:260px;margin-top:8px"><canvas id="chartTop20"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div id="view-table">
+    <div class="chart-card">
+      <div class="search-row">
+        <input class="search-input" id="searchInput" placeholder="ค้นหาชื่อโรงไฟฟ้า, ชื่อย่อ, เชื้อเพลิง..." oninput="renderTable()">
+        <span class="result-count" id="resultCount"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('name')">ชื่อโรงไฟฟ้า <span class="sort-icon" id="sort-name"></span></th>
+              <th onclick="sortTable('abbr')">ชื่อย่อ <span class="sort-icon" id="sort-abbr"></span></th>
+              <th onclick="sortTable('mw')" style="text-align:right">กำลังผลิต (MW) <span class="sort-icon" id="sort-mw">↓</span></th>
+              <th onclick="sortTable('fuel')">เชื้อเพลิง <span class="sort-icon" id="sort-fuel"></span></th>
+              <th onclick="sortTable('owner')">ผู้ผลิต <span class="sort-icon" id="sort-owner"></span></th>
+              <th onclick="sortTable('plantType')">ประเภทโรง <span class="sort-icon" id="sort-plantType"></span></th>
+              <th onclick="sortTable('region')">ภาค <span class="sort-icon" id="sort-region"></span></th>
+              <th onclick="sortTable('ccType')">CC Type <span class="sort-icon" id="sort-ccType"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span class="page-info" id="pageInfo"></span>
+        <div class="page-btns" id="pageBtns"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+const USERS = { admin:'egat2569', operator:'power123', viewer:'view456' };
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const card = document.querySelector('.login-card');
+  if (USERS[u] && USERS[u] === p) {
+    sessionStorage.setItem('egat_user', u);
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('logoutBtn').textContent = u + ' · ออกจากระบบ';
+    document.getElementById('loginErr').textContent = '';
+  } else {
+    document.getElementById('loginErr').textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('egat_user');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+  document.getElementById('loginOverlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('loginUser').focus(), 50);
+}
+
+// Check session on load — skip login if already authenticated
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('egat_user');
+  if (saved) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('logoutBtn').textContent = saved + ' · ออกจากระบบ';
+  } else {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('loginUser').focus();
+  }
+});
+
+// Load data
+let ALL = [];
+fetch('data.json').then(r=>r.json()).then(d=>{ALL=d;init();}).catch(()=>{
+  ALL=[{"name":"ไม่พบข้อมูล","abbr":"N/A","mw":0,"fuel":"","owner":"","region":"","plantType":"","ccType":""}];
+  init();
+});
+
+// Filter state
+const filters = { owner: new Set(), plantType: new Set(), region: new Set() };
+let sortKey = 'mw', sortDir = -1, page = 1;
+const PAGE_SIZE = 20;
+
+// Colors
+const OWNER_COLOR = {
+  'กฟผ.':'#58a6ff','IPP':'#3fb950','บริษัทในเครือ กฟผ.':'#79c0ff',
+  'SPP Firm':'#d2a679','SPP Non-Firm':'#e8916a','ผู้ผลิตต่างประเทศ':'#bc8cff'
+};
+const OWNER_SHORT = {
+  'กฟผ.':'กฟผ.','IPP':'IPP','บริษัทในเครือ กฟผ.':'เครือ กฟผ.',
+  'SPP Firm':'SPP F','SPP Non-Firm':'SPP NF','ผู้ผลิตต่างประเทศ':'ต่างประเทศ'
+};
+const PLANT_COLOR = {
+  'โรงไฟฟ้าพลังงานหมุนเวียน':'#3fb950',
+  'โรงไฟฟ้าพลังความร้อน':'#d29922',
+  'โรงไฟฟ้าพลังความร้อนร่วม':'#58a6ff'
+};
+const PLANT_SHORT = {
+  'โรงไฟฟ้าพลังงานหมุนเวียน':'หมุนเวียน',
+  'โรงไฟฟ้าพลังความร้อน':'ความร้อน',
+  'โรงไฟฟ้าพลังความร้อนร่วม':'ความร้อนร่วม'
+};
+const REGION_COLOR = {
+  'เขตนครหลวง':'#58a6ff','ภาคกลาง':'#3fb950',
+  'ภาคตะวันออกเฉียงเหนือ':'#d29922','ภาคใต้':'#bc8cff','ภาคเหนือ':'#ff7b72'
+};
+const CC_COLOR = {
+  'Single Shaft':'#58a6ff','Multi Shaft':'#3fb950',
+  'Combined Cycle with Single Cycle':'#d29922',
+  'CC+Single Cycle':'#d29922',
+  'CC+Single':'#d29922',
+  'SPP Cogeneration':'#79c0ff','SPP Cogen':'#79c0ff'
+};
+
+let charts = {};
+
+function init() {
+  // Init filters from data
+  ALL.forEach(p => {
+    filters.owner.add(p.owner);
+    filters.plantType.add(p.plantType);
+    filters.region.add(p.region);
+  });
+  updateCountBadges();
+  renderAll();
+}
+
+function getFiltered() {
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  return ALL.filter(p => {
+    const ownerOk = [...document.querySelectorAll('[data-group="owner"].active')].some(el=>el.dataset.val===p.owner);
+    const typeOk = [...document.querySelectorAll('[data-group="plantType"].active')].some(el=>el.dataset.val===p.plantType);
+    const regionOk = [...document.querySelectorAll('[data-group="region"].active')].some(el=>el.dataset.val===p.region);
+    const qOk = !q || p.name.toLowerCase().includes(q) || p.abbr.toLowerCase().includes(q) || p.fuel.toLowerCase().includes(q);
+    return ownerOk && typeOk && regionOk && qOk;
+  });
+}
+
+function renderAll() {
+  const data = getFiltered();
+  renderKPIs(data);
+  renderCharts(data);
+  renderTable();
+}
+
+function renderKPIs(data) {
+  const total = data.reduce((s,p)=>s+p.mw,0);
+  const egat = data.filter(p=>p.owner==='กฟผ.').reduce((s,p)=>s+p.mw,0);
+  const priv = data.filter(p=>p.owner!=='กฟผ.'&&p.owner!=='ผู้ผลิตต่างประเทศ').reduce((s,p)=>s+p.mw,0);
+  const foreign = data.filter(p=>p.owner==='ผู้ผลิตต่างประเทศ').reduce((s,p)=>s+p.mw,0);
+  const re = data.filter(p=>p.plantType==='โรงไฟฟ้าพลังงานหมุนเวียน').reduce((s,p)=>s+p.mw,0);
+  const fmt = v => Math.round(v).toLocaleString('th');
+  const pct = (v,t) => t>0 ? (v/t*100).toFixed(1)+'% ของผลรวม' : '—';
+  document.getElementById('kpi-total').textContent = fmt(total);
+  document.getElementById('kpi-egat').textContent = fmt(egat);
+  document.getElementById('kpi-egat-pct').textContent = pct(egat,total);
+  document.getElementById('kpi-private').textContent = fmt(priv);
+  document.getElementById('kpi-private-pct').textContent = pct(priv,total);
+  document.getElementById('kpi-foreign').textContent = fmt(foreign);
+  document.getElementById('kpi-foreign-pct').textContent = pct(foreign,total);
+  document.getElementById('kpi-re').textContent = fmt(re);
+  document.getElementById('kpi-re-pct').textContent = pct(re,total);
+  document.getElementById('donut-total-val').textContent = (total/1000).toFixed(1)+'k';
+}
+
+function renderCharts(data) {
+  const REGIONS = ['เขตนครหลวง','ภาคกลาง','ภาคตะวันออกเฉียงเหนือ','ภาคใต้','ภาคเหนือ'];
+  const REG_LABELS = ['นครหลวง','ภาคกลาง','ตอ.น.','ภาคใต้','ภาคเหนือ'];
+  const OWNERS = ['กฟผ.','IPP','บริษัทในเครือ กฟผ.','SPP Firm','SPP Non-Firm','ผู้ผลิตต่างประเทศ'];
+
+  // Stacked region chart
+  const regionDatasets = OWNERS.map(o => ({
+    label: OWNER_SHORT[o],
+    data: REGIONS.map(r => data.filter(p=>p.owner===o&&p.region===r).reduce((s,p)=>s+p.mw,0)),
+    backgroundColor: OWNER_COLOR[o],
+    borderRadius: 3, borderSkipped: false
+  }));
+  if (charts.region) charts.region.destroy();
+  charts.region = new Chart(document.getElementById('chartRegion'), {
+    type: 'bar',
+    data: { labels: REG_LABELS, datasets: regionDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1c2330', borderColor: 'rgba(255,255,255,0.14)', borderWidth: 1,
+        titleColor: '#e6edf3', bodyColor: '#7d8590',
+        callbacks: { label: c => ' '+c.dataset.label+': '+Math.round(c.parsed.y).toLocaleString()+' MW' }
+      }},
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: '#7d8590', font: { size: 11, family: 'IBM Plex Sans Thai' } } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7d8590', font: { size: 10 }, callback: v => (v/1000).toFixed(0)+'k' }, border: { display: false } }
+      }
+    }
+  });
+
+  // Donut
+  const ownerTotals = OWNERS.map(o => data.filter(p=>p.owner===o).reduce((s,p)=>s+p.mw,0));
+  const total = ownerTotals.reduce((a,b)=>a+b,0);
+  if (charts.donut) charts.donut.destroy();
+  charts.donut = new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: { labels: OWNERS, datasets: [{ data: ownerTotals, backgroundColor: OWNERS.map(o=>OWNER_COLOR[o]), borderWidth: 0, hoverOffset: 4 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1c2330', borderColor: 'rgba(255,255,255,0.14)', borderWidth: 1,
+        titleColor: '#e6edf3', bodyColor: '#7d8590',
+        callbacks: { label: c => ' '+Math.round(c.parsed).toLocaleString()+' MW ('+( total>0?(c.parsed/total*100).toFixed(1):0 )+'%)' }
+      }}
+    }
+  });
+  // Donut legend
+  const dl = document.getElementById('donutLegend');
+  dl.innerHTML = OWNERS.map((o,i) => {
+    const mw = ownerTotals[i], pct = total>0?(mw/total*100).toFixed(1):'0';
+    return `<div class="dl"><div class="dl-sq" style="background:${OWNER_COLOR[o]}"></div><span class="dl-name">${OWNER_SHORT[o]}</span><span class="dl-pct" style="color:${OWNER_COLOR[o]}">${pct}%</span></div>`;
+  }).join('');
+
+  // Plant type stacked
+  const PT = ['โรงไฟฟ้าพลังงานหมุนเวียน','โรงไฟฟ้าพลังความร้อน','โรงไฟฟ้าพลังความร้อนร่วม'];
+  const ptDatasets = PT.map(t => ({
+    label: PLANT_SHORT[t],
+    data: OWNERS.map(o => data.filter(p=>p.owner===o&&p.plantType===t).reduce((s,p)=>s+p.mw,0)),
+    backgroundColor: PLANT_COLOR[t], borderRadius:3, borderSkipped:false
+  }));
+  if (charts.plantType) charts.plantType.destroy();
+  charts.plantType = new Chart(document.getElementById('chartPlantType'), {
+    type:'bar',
+    data:{ labels: OWNERS.map(o=>OWNER_SHORT[o]), datasets: ptDatasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{
+        backgroundColor:'#1c2330',borderColor:'rgba(255,255,255,0.14)',borderWidth:1,
+        titleColor:'#e6edf3',bodyColor:'#7d8590',
+        callbacks:{label:c=>' '+c.dataset.label+': '+Math.round(c.parsed.y).toLocaleString()+' MW'}
+      }},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:'#7d8590',font:{size:10,family:'IBM Plex Sans Thai'},maxRotation:30}},
+        y:{stacked:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>(v/1000).toFixed(0)+'k'},border:{display:false}}
+      }
+    }
+  });
+
+  // Fuel bars
+  const fuelMap = {};
+  data.forEach(p => { fuelMap[p.fuel] = (fuelMap[p.fuel]||0)+p.mw; });
+  const topFuels = Object.entries(fuelMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxFuel = topFuels[0]?.[1]||1;
+  const fuelColors = ['#58a6ff','#3fb950','#888780','#d29922','#79c0ff','#bc8cff'];
+  document.getElementById('fuelBars').innerHTML = topFuels.map(([f,mw],i) =>
+    `<div class="hbar"><span class="hbar-name w80" title="${f}">${f.length>10?f.slice(0,10)+'…':f}</span><div class="hbar-track"><div class="hbar-fill" style="width:${(mw/maxFuel*100).toFixed(1)}%;background:${fuelColors[i]}"></div></div><span class="hbar-val">${Math.round(mw).toLocaleString()}</span></div>`
+  ).join('');
+
+  // CC bars
+  const ccData = data.filter(p=>p.ccType);
+  const ccMap = {};
+  ccData.forEach(p => { ccMap[p.ccType] = (ccMap[p.ccType]||0)+p.mw; });
+  const ccEntries = Object.entries(ccMap).sort((a,b)=>b[1]-a[1]);
+  const maxCC = ccEntries[0]?.[1]||1;
+  document.getElementById('ccBars').innerHTML = ccEntries.length ?
+    ccEntries.map(([t,mw]) =>
+      `<div class="hbar"><span class="hbar-name w80" title="${t}">${t.length>12?t.slice(0,12)+'…':t}</span><div class="hbar-track"><div class="hbar-fill" style="width:${(mw/maxCC*100).toFixed(1)}%;background:${CC_COLOR[t]||'#58a6ff'}"></div></div><span class="hbar-val">${Math.round(mw).toLocaleString()}</span></div>`
+    ).join('') : '<div style="color:#7d8590;font-size:11px;padding:8px 0">ไม่มีข้อมูลในการกรองนี้</div>';
+
+  // Top 20 horizontal bar
+  const top20 = [...data].sort((a,b)=>b.mw-a.mw).slice(0,20);
+  if (charts.top20) charts.top20.destroy();
+  charts.top20 = new Chart(document.getElementById('chartTop20'), {
+    type: 'bar',
+    data: {
+      labels: top20.map(p => p.name.length>22?p.name.slice(0,22)+'…':p.name),
+      datasets: [{
+        data: top20.map(p=>p.mw),
+        backgroundColor: top20.map(p=>OWNER_COLOR[p.owner]||'#58a6ff'),
+        borderRadius: 4, borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1c2330', borderColor: 'rgba(255,255,255,0.14)', borderWidth: 1,
+        titleColor: '#e6edf3', bodyColor: '#7d8590',
+        callbacks: {
+          title: items => top20[items[0].dataIndex].name,
+          label: c => ' '+Math.round(c.parsed.x).toLocaleString()+' MW · '+top20[c.dataIndex].owner
+        }
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7d8590', font: { size: 10 }, callback: v => v.toLocaleString() }, border: { display: false } },
+        y: { grid: { display: false }, ticks: { color: '#7d8590', font: { size: 11, family: 'IBM Plex Sans Thai' } } }
+      }
+    }
+  });
+}
+
+function renderTable() {
+  const q = (document.getElementById('searchInput')?.value||'').toLowerCase();
+  let data = getFiltered();
+  if (q) data = data.filter(p => p.name.toLowerCase().includes(q)||p.abbr.toLowerCase().includes(q)||p.fuel.toLowerCase().includes(q));
+
+  data.sort((a,b) => {
+    let va=a[sortKey], vb=b[sortKey];
+    if (typeof va === 'string') return va.localeCompare(vb,'th')*sortDir;
+    return (va-vb)*sortDir;
+  });
+
+  const total = data.length;
+  const maxMW = Math.max(...ALL.map(p=>p.mw));
+  const start = (page-1)*PAGE_SIZE;
+  const slice = data.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('resultCount').textContent = `${total.toLocaleString()} โรงไฟฟ้า`;
+
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = slice.map((p,idx) => {
+    const oc = OWNER_COLOR[p.owner]||'#888';
+    const pc = PLANT_COLOR[p.plantType]||'#888';
+    const rc = REGION_COLOR[p.region]||'#888';
+    const cc = CC_COLOR[p.ccType]||'';
+    const pct = (p.mw/maxMW*100).toFixed(1);
+    const hasUnits = p.units && p.units.length > 0;
+    const rowId = 'row-' + (start+idx);
+    const mainRow = `<tr style="cursor:${hasUnits?'pointer':'default'}" onclick="${hasUnits?`toggleUnits('${rowId}')`:''}" title="${hasUnits?'คลิกเพื่อดู unit ย่อย':''}">
+      <td title="${p.name}" style="display:flex;align-items:center;gap:6px">
+        ${hasUnits ? `<span id="arr-${rowId}" style="color:var(--muted);font-size:10px;transition:transform .2s;display:inline-block">▶</span>` : '<span style="width:14px;display:inline-block"></span>'}
+        ${p.name.length>28?p.name.slice(0,28)+'…':p.name}
+        ${hasUnits ? `<span style="font-size:9px;color:var(--muted);background:var(--surface2);padding:1px 5px;border-radius:10px;border:1px solid var(--border)">${p.units.length} unit</span>` : ''}
+      </td>
+      <td><span class="mono" style="font-size:11px;color:${oc}">${p.abbr}</span></td>
+      <td>
+        <div class="mw-bar-cell">
+          <div class="mw-mini-track"><div class="mw-mini-fill" style="width:${pct}%;background:${oc}"></div></div>
+          <span class="mono" style="font-size:11px">${p.mw>=1?p.mw.toLocaleString('th',{maximumFractionDigits:1}):p.mw.toFixed(3)}</span>
+        </div>
+      </td>
+      <td style="font-size:11px;color:var(--muted)" title="${p.fuel}">${p.fuel.length>18?p.fuel.slice(0,18)+'…':p.fuel}</td>
+      <td><span class="tag" style="background:${oc}22;color:${oc};border:1px solid ${oc}44">${OWNER_SHORT[p.owner]||p.owner}</span></td>
+      <td><span class="tag" style="background:${pc}22;color:${pc};border:1px solid ${pc}44">${PLANT_SHORT[p.plantType]||p.plantType}</span></td>
+      <td><span class="tag" style="background:${rc}22;color:${rc};border:1px solid ${rc}44">${p.region.replace('ฝ่ายปฏิบัติการ','').replace('ภาค','').replace('เขต','')}</span></td>
+      <td>${p.ccType?`<span class="tag" style="background:${cc}22;color:${cc};border:1px solid ${cc}44">${p.ccType}</span>`:''}</td>
+    </tr>`;
+
+    const unitRows = hasUnits ? `<tr id="${rowId}" style="display:none">
+      <td colspan="8" style="padding:0;background:var(--surface2)">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:5px 12px 5px 40px;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Unit</td>
+            <td style="padding:5px 12px;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em">ชื่อย่อ</td>
+            <td style="padding:5px 12px;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;text-align:right">กำลังผลิต (MW)</td>
+            <td style="padding:5px 12px;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em">สัดส่วน</td>
+          </tr></thead>
+          <tbody>
+            ${p.units.map((u,ui) => `<tr style="border-bottom:1px solid var(--border)${ui===p.units.length-1?';border-bottom:none':''}">
+              <td style="padding:5px 12px 5px 40px;color:var(--text)">${u.name.length>35?u.name.slice(0,35)+'…':u.name}</td>
+              <td style="padding:5px 12px;font-family:'IBM Plex Mono',monospace;color:${oc};font-size:10px">${u.abbr}</td>
+              <td style="padding:5px 12px;font-family:'IBM Plex Mono',monospace;text-align:right;color:var(--text)">${u.mw.toLocaleString('th',{maximumFractionDigits:2})}</td>
+              <td style="padding:5px 12px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="width:60px;height:4px;background:var(--border2);border-radius:2px;overflow:hidden">
+                    <div style="width:${(u.mw/p.mw*100).toFixed(1)}%;height:100%;background:${oc};border-radius:2px"></div>
+                  </div>
+                  <span style="font-size:10px;color:var(--muted)">${(u.mw/p.mw*100).toFixed(1)}%</span>
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </td>
+    </tr>` : '';
+    return mainRow + unitRows;
+  }).join('');
+
+  document.getElementById('pageInfo').textContent = `แสดง ${start+1}–${Math.min(start+PAGE_SIZE,total)} จาก ${total.toLocaleString()} โรง`;
+
+  const pages = Math.ceil(total/PAGE_SIZE);
+  let startP = Math.max(1,page-2), endP = Math.min(pages,startP+4);
+  if(endP-startP<4) startP=Math.max(1,endP-4);
+  const pb = document.getElementById('pageBtns');
+  pb.innerHTML = '';
+  if(page>1){const b=document.createElement('button');b.className='page-btn';b.textContent='‹';b.onclick=()=>{page--;renderTable()};pb.appendChild(b)}
+  for(let i=startP;i<=endP;i++){
+    const b=document.createElement('button');
+    b.className='page-btn'+(i===page?' active':'');
+    b.textContent=i;const pi=i;b.onclick=()=>{page=pi;renderTable()};pb.appendChild(b);
+  }
+  if(page<pages){const b=document.createElement('button');b.className='page-btn';b.textContent='›';b.onclick=()=>{page++;renderTable()};pb.appendChild(b)}
+}
+
+function toggleFilter(el) {
+  el.classList.toggle('active');
+  page = 1;
+  renderAll();
+  updateCountBadges();
+}
+
+function toggleAll(group) {
+  const items = document.querySelectorAll(`[data-group="${group}"]`);
+  const allActive = [...items].every(el=>el.classList.contains('active'));
+  items.forEach(el => allActive ? el.classList.remove('active') : el.classList.add('active'));
+  page = 1;
+  renderAll();
+  updateCountBadges();
+}
+
+function updateCountBadges() {
+  const owners = ['กฟผ.','IPP','บริษัทในเครือ กฟผ.','SPP Firm','SPP Non-Firm','ผู้ผลิตต่างประเทศ'];
+  const ids = ['egat','ipp','aff','sppf','sppnf','foreign'];
+  owners.forEach((o,i) => {
+    const el = document.getElementById('cnt-owner-'+ids[i]);
+    if(el) el.textContent = ALL.filter(p=>p.owner===o).length;
+  });
+}
+
+function sortTable(key) {
+  if(sortKey===key) sortDir*=-1; else {sortKey=key;sortDir=key==='mw'?-1:1;}
+  ['name','abbr','mw','fuel','owner','plantType','region','ccType'].forEach(k => {
+    const el = document.getElementById('sort-'+k);
+    if(el) el.textContent = k===sortKey?(sortDir===1?'↑':'↓'):'';
+  });
+  page=1; renderTable();
+}
+
+function switchView(view, btn) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('view-charts').style.display = view==='charts'?'block':'none';
+  document.getElementById('view-table').style.display = view==='table'?'block':'none';
+  if(view==='table') renderTable();
+}
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  // Update PWA theme-color
+  const meta = document.getElementById('themeColorMeta');
+  if (meta) meta.content = isDark ? '#161b22' : '#ffffff';
+  renderAll();
+}
+
+
+function toggleUnits(rowId) {
+  const row = document.getElementById(rowId);
+  const arr = document.getElementById('arr-' + rowId);
+  if (!row) return;
+  const isOpen = row.style.display !== 'none';
+  row.style.display = isOpen ? 'none' : 'table-row';
+  if (arr) arr.style.transform = isOpen ? '' : 'rotate(90deg)';
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
