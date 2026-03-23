@@ -2,7 +2,7 @@
 <html lang="th" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>กำลังผลิตตามสัญญาของระบบไฟฟ้า</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -323,6 +323,168 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
   font-size: 12px !important;
 }
 
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE — iPhone support
+   Breakpoints:
+   - SE (375px), 14/15 (390px), Plus/Max (430px)
+   - iPad mini (768px)
+═══════════════════════════════════════════════ */
+
+/* Safe area for notch/Dynamic Island */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 calc(8px + var(--safe-bot));
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+.bottom-nav-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; cursor: pointer; color: var(--muted);
+  font-size: 10px; min-width: 60px; padding: 4px 8px;
+  border-radius: 8px; transition: color .15s;
+  background: none; border: none;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+}
+.bottom-nav-item.active { color: var(--accent); }
+.bottom-nav-item svg { width: 22px; height: 22px; }
+
+/* ── FILTER DRAWER (mobile) ── */
+.filter-drawer-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.5);
+}
+.filter-drawer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  max-height: 80vh; overflow-y: auto;
+  padding: 0 16px calc(16px + var(--safe-bot));
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+.filter-drawer.open { transform: translateY(0); }
+.filter-drawer-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border2); margin: 12px auto 16px;
+}
+.filter-drawer-title {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 16px;
+}
+
+/* ─── TABLET ≤ 1024px ─── */
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 200px 1fr; }
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .kpi-card:nth-child(4), .kpi-card:nth-child(5) {
+    grid-column: span 1;
+  }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+
+  /* Viewport padding for safe area */
+  body { padding-bottom: calc(60px + var(--safe-bot)); }
+
+  /* Nav — compact */
+  .nav {
+    height: 48px;
+    padding: 0 12px 0 calc(12px + var(--safe-left));
+    padding-top: var(--safe-top);
+    height: calc(48px + var(--safe-top));
+  }
+  .nav-brand { gap: 8px; }
+  .nav-title { font-size: 13px; }
+  .nav-sub, .nav-badge { display: none; }
+
+  /* Hide nav right buttons — replaced by bottom nav */
+  .nav-right-desktop { display: none !important; }
+
+  /* Show bottom nav */
+  .bottom-nav { display: flex; }
+
+  /* Hide sidebar — replaced by filter drawer */
+  .sidebar { display: none; }
+
+  /* Full width content */
+  .layout { grid-template-columns: 1fr; }
+  .content { padding: 12px 12px; }
+
+  /* KPI — 2 columns */
+  .kpi-strip { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .kpi-card { padding: 10px 12px; }
+  .kpi-val { font-size: 18px; }
+  .kpi-label { font-size: 10px; margin-bottom: 4px; }
+
+  /* Charts — single column */
+  .grid-2, .grid-3 { grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+  .grid-full { margin-bottom: 10px; }
+  .chart-card { padding: 12px; }
+  .chart-title { font-size: 11px; margin-bottom: 8px; }
+
+  /* Table — horizontal scroll, bigger touch targets */
+  .data-table th, .data-table td { padding: 10px 10px; }
+  .data-table td { min-height: 44px; }
+  .page-btn { width: 36px; height: 36px; font-size: 13px; }
+
+  /* Search row */
+  .search-input { font-size: 14px; padding: 10px 12px; }
+
+  /* Login card */
+  .login-card { width: calc(100vw - 32px); padding: 28px 20px; border-radius: 20px; }
+  .login-title { font-size: 18px; }
+  .login-input { font-size: 16px; padding: 12px 14px; } /* 16px prevents iOS zoom */
+  .login-btn { padding: 14px; font-size: 15px; }
+
+  /* Donut combo — stack */
+  .donut-combo { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .donut-wrap { width: 120px; height: 120px; }
+
+  /* HBar name width */
+  .hbar-name { width: 80px; }
+  .hbar-name.w80 { width: 70px; }
+
+  /* Legend wrapping */
+  .legend { gap: 6px; }
+  .leg { font-size: 10px; }
+}
+
+/* ─── SMALL iPhone SE 375px ─── */
+@media (max-width: 390px) {
+  .kpi-strip { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .kpi-val { font-size: 16px; }
+  .content { padding: 10px 10px; }
+  .chart-card { padding: 10px; }
+}
+
+/* ─── Landscape on iPhone ─── */
+@media (max-width: 896px) and (orientation: landscape) {
+  .nav { height: 44px; }
+  body { padding-bottom: calc(52px + var(--safe-bot)); }
+  .kpi-strip { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .grid-2 { grid-template-columns: 1.4fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
 </style>
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -343,6 +505,88 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 <body>
 
 <!-- NAV -->
+
+<!-- BOTTOM NAV (mobile only) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-item active" id="bn-charts" onclick="mobileView('charts')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
+    </svg>
+    ภาพรวม
+  </button>
+  <button class="bottom-nav-item" id="bn-table" onclick="mobileView('table')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/>
+    </svg>
+    รายโรง
+  </button>
+  <button class="bottom-nav-item" id="bn-filter" onclick="openFilterDrawer()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+    </svg>
+    กรอง
+  </button>
+  <a href="map.html" style="text-decoration:none">
+    <button class="bottom-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
+      </svg>
+      แผนที่
+    </button>
+  </a>
+  <button class="bottom-nav-item" onclick="toggleTheme();updateThemeIcon()">
+    <svg id="themeIconMobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+    ธีม
+  </button>
+</nav>
+
+<!-- FILTER DRAWER (mobile) -->
+<div class="filter-drawer-overlay" id="filterOverlay" onclick="closeFilterDrawer()">
+  <div class="filter-drawer" id="filterDrawer" onclick="event.stopPropagation()">
+    <div class="filter-drawer-handle"></div>
+    <div class="filter-drawer-title">กรองข้อมูล</div>
+
+    <div class="sb-label" style="margin-bottom:8px">ประเภทผู้ผลิต</div>
+    <div class="filter-toggle-all" onclick="toggleAll('owner')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-owner-mobile">
+      <div class="filter-item active" data-group="owner" data-val="กฟผ." onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-egat)"></div><span class="filter-label">กฟผ.</span></div>
+      <div class="filter-item active" data-group="owner" data-val="IPP" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-ipp)"></div><span class="filter-label">IPP</span></div>
+      <div class="filter-item active" data-group="owner" data-val="บริษัทในเครือ กฟผ." onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-affiliate)"></div><span class="filter-label">บริษัทในเครือ กฟผ.</span></div>
+      <div class="filter-item active" data-group="owner" data-val="SPP Firm" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-sppf)"></div><span class="filter-label">SPP Firm</span></div>
+      <div class="filter-item active" data-group="owner" data-val="SPP Non-Firm" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-sppnf)"></div><span class="filter-label">SPP Non-Firm</span></div>
+      <div class="filter-item active" data-group="owner" data-val="ผู้ผลิตต่างประเทศ" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-foreign)"></div><span class="filter-label">ต่างประเทศ</span></div>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-label" style="margin-bottom:8px">ประเภทโรงไฟฟ้า</div>
+    <div class="filter-toggle-all" onclick="toggleAll('plantType')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-type-mobile">
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังงานหมุนเวียน" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-re)"></div><span class="filter-label">พลังงานหมุนเวียน</span></div>
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังความร้อน" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-thermal)"></div><span class="filter-label">พลังความร้อน</span></div>
+      <div class="filter-item active" data-group="plantType" data-val="โรงไฟฟ้าพลังความร้อนร่วม" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-cc)"></div><span class="filter-label">พลังความร้อนร่วม</span></div>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-label" style="margin-bottom:8px">ภาค</div>
+    <div class="filter-toggle-all" onclick="toggleAll('region')">เลือกทั้งหมด</div>
+    <div class="filter-group" id="filter-region-mobile">
+      <div class="filter-item active" data-group="region" data-val="เขตนครหลวง" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-egat)"></div><span class="filter-label">เขตนครหลวง</span></div>
+      <div class="filter-item active" data-group="region" data-val="ภาคกลาง" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-ipp)"></div><span class="filter-label">ภาคกลาง</span></div>
+      <div class="filter-item active" data-group="region" data-val="ภาคตะวันออกเฉียงเหนือ" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-thermal)"></div><span class="filter-label">ภาคตะวันออกเฉียงเหนือ</span></div>
+      <div class="filter-item active" data-group="region" data-val="ภาคใต้" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-foreign)"></div><span class="filter-label">ภาคใต้</span></div>
+      <div class="filter-item active" data-group="region" data-val="ภาคเหนือ" onclick="toggleFilter(this)"><div class="filter-dot" style="background:var(--c-coral)"></div><span class="filter-label">ภาคเหนือ</span></div>
+    </div>
+
+    <div style="margin-top:20px;padding-bottom:4px">
+      <button onclick="closeFilterDrawer()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer">
+        ดูผลลัพธ์
+      </button>
+    </div>
+  </div>
+</div>
+
 <nav class="nav">
   <div class="nav-brand">
     <div class="nav-logo">
@@ -354,7 +598,7 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
     </div>
     <div class="nav-badge">49,410 MW</div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px">
+  <div style="display:flex;align-items:center;gap:8px" class="nav-right-desktop">
     <div class="nav-tabs">
       <button class="nav-tab active" onclick="switchView('charts',this)">ภาพรวม</button>
       <button class="nav-tab" onclick="switchView('table',this)">รายโรง</button>
@@ -1026,6 +1270,54 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW error:', e));
   });
 }
+
+// ── MOBILE UI ─────────────────────────────────────────────────────────────────
+function mobileView(view) {
+  // Update bottom nav active state
+  ['charts','table'].forEach(v => {
+    const btn = document.getElementById('bn-' + v);
+    if (btn) btn.classList.toggle('active', v === view);
+  });
+  // Switch view (reuse existing)
+  const fakeBtn = document.createElement('button');
+  fakeBtn.classList.add('nav-tab');
+  if (view === 'charts') fakeBtn.classList.add('active');
+  switchView(view, fakeBtn);
+  // Also sync desktop tabs
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    const text = t.textContent.trim();
+    t.classList.toggle('active',
+      (view === 'charts' && text === 'ภาพรวม') ||
+      (view === 'table'  && text === 'รายโรง')
+    );
+  });
+}
+
+function openFilterDrawer() {
+  document.getElementById('filterOverlay').style.display = 'block';
+  setTimeout(() => document.getElementById('filterDrawer').classList.add('open'), 10);
+  document.body.style.overflow = 'hidden';
+}
+function closeFilterDrawer() {
+  document.getElementById('filterDrawer').classList.remove('open');
+  setTimeout(() => {
+    document.getElementById('filterOverlay').style.display = 'none';
+    document.body.style.overflow = '';
+  }, 300);
+}
+
+function updateThemeIcon() {
+  const svg = document.getElementById('themeIconMobile');
+  if (!svg) return;
+  if (isDark) {
+    svg.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  } else {
+    svg.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  }
+}
+// Keep filter drawer sync'd with sidebar filters
+const origToggleFilter = toggleFilter;
+
 </script>
 </body>
 </html>
